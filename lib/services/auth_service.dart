@@ -8,7 +8,7 @@ class AuthService {
   static const baseUrl = 'http://localhost:8080/api/auth';
   final storage = const FlutterSecureStorage();
 
-  // Đăng ký
+
   Future<String?> register(RegisterRequest request) async {
     try {
       final response = await http.post(
@@ -27,7 +27,7 @@ class AuthService {
     }
   }
 
-  // Đăng nhập
+
   Future<String?> login(LoginRequest request, Function(String role) onSuccess) async {
     try {
       final response = await http.post(
@@ -40,9 +40,11 @@ class AuthService {
         final json = jsonDecode(response.body);
         final token = json['token'];
         final role = json['role'];
+        final username = json['username'];
 
         await storage.write(key: 'token', value: token);
         await storage.write(key: 'role', value: role);
+        await storage.write(key: 'username', value: username);
 
         onSuccess(role);
         return null;
@@ -118,9 +120,31 @@ class AuthService {
   }
 
 
-  Future<void> logout() async {
-    await storage.delete(key: 'token');
-    await storage.delete(key: 'role');
+  Future<bool> logout() async {
+    final token = await getToken();
+
+    if (token == null) return false;
+
+    final url = Uri.parse('$baseUrl/logout');
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        await storage.delete(key: 'token');
+        await storage.delete(key: 'role');
+        await storage.delete(key: 'username'); // XÓA LUÔN USERNAME
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
   }
 
 
@@ -131,6 +155,11 @@ class AuthService {
 
   Future<String?> getRole() async {
     return await storage.read(key: 'role');
+  }
+
+
+  Future<String?> getUsername() async {
+    return await storage.read(key: 'username');
   }
 
 

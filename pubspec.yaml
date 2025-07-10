@@ -34,6 +34,7 @@ dependencies:
   http: ^0.13.6
   flutter_secure_storage: ^9.2.4
   get: ^4.6.6
+  shared_preferences: ^2.2.2
 
 
 
