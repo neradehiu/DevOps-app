@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart'; // Thêm dòng này
+import 'package:get/get.dart';
 import 'screens/login_screen.dart';
 
 void main() {
@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
       title: 'Find Work For Everyone',
       theme: ThemeData(
         primarySwatch: Colors.deepPurple,
-        scaffoldBackgroundColor: const Color(0xFFF4F1FB), // Màu nền nhẹ
+        scaffoldBackgroundColor: const Color(0xFFF4F1FB),
       ),
       home: const LoginScreen(),
       debugShowCheckedModeBanner: false,
