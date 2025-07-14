@@ -4,11 +4,13 @@ import 'package:http/http.dart' as http;
 import 'package:jwt_decoder/jwt_decoder.dart';
 
 class CompanyService {
+
   static const String baseUrl = 'http://localhost:8080/api/companies';
   static const _storage = FlutterSecureStorage();
 
+
   static Future<Map<String, String>> _getAuthHeaders() async {
-    final token = await _storage.read(key: 'token'); // phải trùng với AuthService
+    final token = await _storage.read(key: 'token');
 
     if (token == null) {
       print('[DEBUG] Không tìm thấy token trong FlutterSecureStorage');
@@ -30,6 +32,7 @@ class CompanyService {
       'X-Role': role,
     };
   }
+
 
   static Future<Map<String, dynamic>> createCompany({
     required String name,
@@ -60,6 +63,7 @@ class CompanyService {
     }
   }
 
+
   static Future<List<Map<String, dynamic>>> getMyCompanies() async {
     final headers = await _getAuthHeaders();
 
@@ -75,9 +79,49 @@ class CompanyService {
       final List<dynamic> data = jsonDecode(response.body);
       return data.cast<Map<String, dynamic>>();
     } else {
-      throw Exception('Không thể tải công ty: ${response.statusCode}');
+      throw Exception('Không thể tải công ty của bạn: ${response.statusCode}');
     }
   }
+
+
+  static Future<List<Map<String, dynamic>>> getAllCompanies() async {
+    final headers = await _getAuthHeaders();
+
+    final response = await http.get(
+      Uri.parse(baseUrl),
+      headers: headers,
+    );
+
+    print('[DEBUG] Get all companies response: ${response.statusCode}');
+    print('[DEBUG] Response body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.cast<Map<String, dynamic>>();
+    } else {
+      throw Exception('Không thể tải danh sách công ty: ${response.statusCode}');
+    }
+  }
+
+
+  static Future<Map<String, dynamic>> getCompanyById(int id) async {
+    final headers = await _getAuthHeaders();
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/$id'),
+      headers: headers,
+    );
+
+    print('[DEBUG] Get company by ID response: ${response.statusCode}');
+    print('[DEBUG] Response body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Không thể tải chi tiết công ty: ${response.statusCode}');
+    }
+  }
+
 
   static Future<Map<String, dynamic>> updateCompany({
     required int id,
@@ -108,6 +152,7 @@ class CompanyService {
       throw Exception('Cập nhật công ty thất bại: ${response.statusCode}');
     }
   }
+
 
   static Future<void> deleteCompany(int id) async {
     final headers = await _getAuthHeaders();

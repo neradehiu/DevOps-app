@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/work_service.dart';
+import '../services/company_service.dart';
 import 'ww_screen.dart';
 import 'settings_screen.dart';
+import 'companyListScreen.dart';
+import 'support_screen.dart';
+import 'notification_screen.dart';
+import 'profile_screen.dart';
 
 class UserScreen extends StatefulWidget {
   const UserScreen({super.key});
@@ -14,17 +20,46 @@ class _UserScreenState extends State<UserScreen> {
   final AuthService _authService = AuthService();
   int _currentIndex = 0;
   String? _username;
+  final TextEditingController _searchController = TextEditingController();
+  List<Map<String, dynamic>> jobList = [];
+  List<Map<String, dynamic>> filteredJobs = [];
 
   @override
   void initState() {
     super.initState();
     loadUsername();
+    loadJobs();
   }
 
   Future<void> loadUsername() async {
     final name = await _authService.getUsername();
     setState(() {
       _username = name;
+    });
+  }
+
+  Future<void> loadJobs() async {
+    try {
+      final jobs = await WorkService.getAllWorks();
+      setState(() {
+        jobList = jobs;
+        filteredJobs = List.from(jobs);
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi tải công việc: $e')),
+      );
+    }
+  }
+
+  void _filterJobs(String query) {
+    final lowerQuery = query.toLowerCase();
+    setState(() {
+      filteredJobs = jobList.where((job) {
+        final position = job['position']?.toLowerCase() ?? '';
+        final company = job['company']?.toLowerCase() ?? '';
+        return position.contains(lowerQuery) || company.contains(lowerQuery);
+      }).toList();
     });
   }
 
@@ -39,11 +74,52 @@ class _UserScreenState extends State<UserScreen> {
     if (role == 'ROLE_MANAGER') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const WWScreen()),
+        MaterialPageRoute(builder: (context) => const WWScreen()), // ĐÃ GỘP TOÀN BỘ
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Bạn không đủ quyền truy cập vào trang này")),
+        const SnackBar(
+          content: Text(
+            "Chức năng tuyển dụng của riêng doanh nghiệp, liên hệ admin để đăng ký tài khoản doanh nghiệp ngay!",
+          ),
+        ),
+      );
+    }
+  }
+
+  void showCompanyDetail(BuildContext context, int companyId) async {
+    try {
+      final company = await CompanyService.getCompanyById(companyId);
+
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text(company['name'] ?? 'Thông tin công ty'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Mô tả: ${company['descriptionCompany'] ?? ''}'),
+              const SizedBox(height: 8),
+              Text('Loại hình: ${company['type'] ?? ''}'),
+              const SizedBox(height: 8),
+              Text('Địa chỉ: ${company['address'] ?? ''}'),
+              const SizedBox(height: 8),
+              Text(
+                  'Công khai: ${company['isPublic'] == true ? 'Có' : 'Không'}'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Đóng'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Không thể hiển thị chi tiết công ty: $e')),
       );
     }
   }
@@ -72,18 +148,78 @@ class _UserScreenState extends State<UserScreen> {
     );
   }
 
+  Widget buildCompanyDrawer(BuildContext context) {
+    return Drawer(
+      elevation: 0,
+      width: MediaQuery.of(context).size.width * 0.5,
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF9D4EDD), Color(0xFF40C9FF)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Text(
+                  'TÌM VIỆC 24H',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                ),
+              ),
+              const Divider(color: Colors.white54),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF63F4E9),
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  Future.delayed(const Duration(milliseconds: 200), () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const CompanyListScreen()),
+                    );
+                  });
+                },
+                child: const Text(
+                  'Danh sách công ty',
+                  style: TextStyle(
+                      color: Colors.black, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<Widget> screens = [
       buildJobListTab(context),
-      const Center(child: Text('Thông báo')),
-      const Center(child: Text('Hồ sơ cá nhân')),
+      const NotificationScreen(),
+      const ProfileScreen(),
       const SettingsScreen(),
-      const Center(child: Text('Hỗ trợ khách hàng')),
+      const SupportScreen(),
     ];
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      endDrawer: buildCompanyDrawer(context),
       body: IndexedStack(
         index: _currentIndex,
         children: screens,
@@ -95,13 +231,15 @@ class _UserScreenState extends State<UserScreen> {
           children: [
             buildCircleButton(
               onTap: () => onChatPressed(context),
-              child: const Icon(Icons.message_rounded, color: Colors.white, size: 24),
+              child: const Icon(Icons.message_rounded,
+                  color: Colors.white, size: 24),
             ),
             buildCircleButton(
               onTap: () => onWWPressed(context),
               child: const Text(
                 'WW',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style:
+                TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -131,7 +269,13 @@ class _UserScreenState extends State<UserScreen> {
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          color: const Color(0xFF66D2EA),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF9D4EDD), Color(0xFF40C9FF)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -141,15 +285,18 @@ class _UserScreenState extends State<UserScreen> {
               ),
               const Text(
                 'TÌM VIỆC 24H',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16),
               ),
-              IconButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Bạn đã nhấn menu')),
+              Builder(
+                builder: (context) {
+                  return IconButton(
+                    onPressed: () => Scaffold.of(context).openEndDrawer(),
+                    icon: const Icon(Icons.menu, color: Colors.white),
                   );
                 },
-                icon: const Icon(Icons.menu, color: Colors.white),
               ),
             ],
           ),
@@ -168,10 +315,13 @@ class _UserScreenState extends State<UserScreen> {
               children: [
                 const Icon(Icons.search, color: Colors.purple),
                 const SizedBox(width: 8),
-                const Expanded(
+                Expanded(
                   child: TextField(
-                    style: TextStyle(color: Colors.black),
-                    decoration: InputDecoration(
+                    controller: _searchController,
+                    onChanged: _filterJobs,
+                    style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black),
+                    decoration: const InputDecoration(
                       hintText: 'THANH TÌM KIẾM',
                       border: InputBorder.none,
                     ),
@@ -196,23 +346,54 @@ class _UserScreenState extends State<UserScreen> {
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: 4,
+            itemCount: filteredJobs.length,
             itemBuilder: (context, index) {
-              return Container(
-                height: 80,
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFB84DF1), Color(0xFF4ED0EB)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              final job = filteredJobs[index];
+              return InkWell(
+                onTap: () {
+                  final companyId = job['companyId'];
+                  if (companyId != null) {
+                    showCompanyDetail(context, companyId);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Không tìm thấy ID công ty')),
+                    );
+                  }
+                },
+                child: Container(
+                  height: 100,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFB84DF1), Color(0xFF4ED0EB)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                   ),
-                ),
-                child: Center(
-                  child: Text(
-                    'Công việc ${index + 1}',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          job['position'] ?? '',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Công ty: ${job['company'] ?? ''}',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        Text(
+                          'Lương: ${job['salary']} VNĐ',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );

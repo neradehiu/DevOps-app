@@ -145,10 +145,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           return const Color(0xFF9D4EDD);
                         },
                       ),
-                      foregroundColor:
-                      MaterialStateProperty.all<Color>(Colors.white),
-                      textStyle:
-                      MaterialStateProperty.all<TextStyle>(
+                      foregroundColor: MaterialStateProperty.all<Color>(
+                          Colors.white),
+                      textStyle: MaterialStateProperty.all<TextStyle>(
                         const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold),
                       ),
@@ -168,7 +167,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                      MaterialPageRoute(
+                          builder: (_) => const RegisterScreen()),
                     );
                   },
                   child: const Text(

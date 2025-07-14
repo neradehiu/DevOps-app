@@ -1,16 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../services/auth_service.dart';
-import '../main.dart';
+import '../controllers/theme_controller.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
-
-  @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  bool isDarkMode = false;
 
   Future<void> logout(BuildContext context) async {
     final authService = AuthService();
@@ -27,13 +21,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    isDarkMode = Theme.of(context).brightness == Brightness.dark;
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final ThemeController themeController = Get.find();
+
     return Scaffold(
       body: Column(
         children: [
@@ -85,7 +75,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             text: 'Ngôn ngữ ứng dụng',
             onTap: () => _showMessage(context, 'Ngôn ngữ ứng dụng'),
           ),
-          _buildThemeToggleTile(context),
+
+          // Sử dụng Obx để phản ứng với thay đổi từ ThemeController
+          Obx(() => _buildThemeToggleTile(
+            context,
+            themeController.isDarkMode.value,
+                (value) => themeController.toggleTheme(),
+          )),
+
           _buildListTileOption(
             context,
             icon: Icons.logout,
@@ -113,8 +110,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         leading: Icon(icon, color: Colors.white),
         title: Text(
           text,
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.bold),
+          style:
+          const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         onTap: onTap,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -124,7 +121,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildThemeToggleTile(BuildContext context) {
+  Widget _buildThemeToggleTile(
+      BuildContext context, bool isDarkMode, Function(bool) onToggle) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
@@ -143,10 +141,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           value: isDarkMode,
           activeColor: Colors.white,
           onChanged: (value) {
-            setState(() {
-              isDarkMode = value;
-            });
-            InheritedThemeController.of(context)?.toggleTheme(value);
+            onToggle(value); // Gọi toggleTheme từ controller
           },
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
