@@ -8,6 +8,7 @@ import 'companyListScreen.dart';
 import 'support_screen.dart';
 import 'notification_screen.dart';
 import 'profile_screen.dart';
+import 'group_chat_screen.dart';
 
 class UserScreen extends StatefulWidget {
   const UserScreen({super.key});
@@ -64,8 +65,9 @@ class _UserScreenState extends State<UserScreen> {
   }
 
   void onChatPressed(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Bạn đã ấn vào nút Chat")),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const GroupChatScreen()),
     );
   }
 
