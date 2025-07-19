@@ -53,6 +53,15 @@ class _UserScreenState extends State<UserScreen> {
   Future<void> loadJobs() async {
     try {
       final jobs = await WorkService.getAllWorks();
+      for (var job in jobs) {
+        if (job['companyId'] != null) {
+          final company =
+          await CompanyService.getCompanyById(job['companyId']);
+          job['company'] = company['name'] ?? 'Không rõ';
+        } else {
+          job['company'] = 'Không rõ';
+        }
+      }
       setState(() {
         jobList = jobs;
         filteredJobs = List.from(jobs);
@@ -63,6 +72,7 @@ class _UserScreenState extends State<UserScreen> {
       );
     }
   }
+
 
   void _filterJobs(String query) {
     final lowerQuery = query.toLowerCase();
@@ -108,7 +118,6 @@ class _UserScreenState extends State<UserScreen> {
         context: context,
         builder: (_) => AlertDialog(
           title: Text(company['name'] ?? 'Thông tin công ty'),
-          // ↓ Thay `content: Column(...)` thành:
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -409,7 +418,7 @@ class _UserScreenState extends State<UserScreen> {
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16
                             ),
-                            maxLines: 1,               // force single line
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),

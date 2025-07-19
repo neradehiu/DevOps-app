@@ -1,4 +1,3 @@
-// admin_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/account.dart';
@@ -115,6 +114,25 @@ class AdminService {
       throw Exception('Failed to load account info: ${response.body}');
     }
   }
+
+  Future<void> changePassword(String oldPass, String newPass, String token) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/admin/change-password'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'oldPassword': oldPass,
+        'newPassword': newPass,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Đổi mật khẩu thất bại');
+    }
+  }
+
 
 
   Future<void> createUser({

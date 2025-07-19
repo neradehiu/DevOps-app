@@ -76,7 +76,7 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
             case 2:
               break;
             case 3:
-              Navigator.pushReplacementNamed(context, '/admin/me');
+              Navigator.pushReplacementNamed(context, '/admin/profile');
               break;
             case 4:
               Navigator.pushReplacementNamed(context, '/admin/settings');

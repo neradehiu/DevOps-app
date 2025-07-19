@@ -224,26 +224,28 @@ class _AdminScreenState extends State<AdminScreen> {
         selectedItemColor: Colors.red,
         unselectedItemColor: Colors.black,
         onTap: (index) {
+          setState(() {
+            selectedIndex = index;
+          });
           switch (index) {
             case 0:
+              Navigator.pushReplacementNamed(context, '/'); // hoặc '/admin' nếu có route riêng cho AdminScreen
               break;
             case 1:
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AdminCreateAccountScreen()),
-              );
+              Navigator.pushReplacementNamed(context, '/admin/create');
               break;
             case 2:
-              Navigator.pushNamed(context, '/admin/reports');
+              Navigator.pushReplacementNamed(context, '/admin/reports');
               break;
             case 3:
-              Navigator.pushNamed(context, '/admin/profile');
+              Navigator.pushReplacementNamed(context, '/admin/profile');
               break;
             case 4:
-              Navigator.pushNamed(context, '/admin/settings');
+              Navigator.pushReplacementNamed(context, '/admin/settings');
               break;
           }
         },
+
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Tài khoản'),
           BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Thêm'),

@@ -27,6 +27,8 @@ class _WWScreenState extends State<WWScreen> with SingleTickerProviderStateMixin
   final _maxReceiverController = TextEditingController();
   final _salaryController = TextEditingController();
 
+  int? selectedCompanyId;
+
   Map<String, dynamic>? editingCompany;
   Map<String, dynamic>? editingWork;
 
@@ -173,12 +175,14 @@ class _WWScreenState extends State<WWScreen> with SingleTickerProviderStateMixin
       _maxAcceptedController.text = work['maxAccepted'].toString();
       _maxReceiverController.text = work['maxReceiver'].toString();
       _salaryController.text = work['salary'].toString();
+      selectedCompanyId = work['companyId'];
     } else {
       _positionController.clear();
       _descController.clear();
       _maxAcceptedController.clear();
       _maxReceiverController.clear();
       _salaryController.clear();
+      selectedCompanyId = null;
     }
 
     showDialog(
@@ -190,6 +194,17 @@ class _WWScreenState extends State<WWScreen> with SingleTickerProviderStateMixin
             children: [
               _buildTextField(_positionController, 'Vị trí'),
               _buildTextField(_descController, 'Mô tả'),
+              DropdownButtonFormField<int>(
+                value: selectedCompanyId,
+                decoration: const InputDecoration(labelText: 'Chọn công ty'),
+                items: myCompanies
+                    .map((company) => DropdownMenuItem<int>(
+                  value: company['id'],
+                  child: Text(company['name']),
+                ))
+                    .toList(),
+                onChanged: (value) => setState(() => selectedCompanyId = value),
+              ),
               _buildTextField(_maxAcceptedController, 'Số người nhận', inputType: TextInputType.number),
               _buildTextField(_maxReceiverController, 'Số người nhận CV', inputType: TextInputType.number),
               _buildTextField(_salaryController, 'Lương', inputType: TextInputType.number),
@@ -200,9 +215,7 @@ class _WWScreenState extends State<WWScreen> with SingleTickerProviderStateMixin
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
           ElevatedButton(
             onPressed: () {
-              work != null
-                  ? _updateWork(work['id'])
-                  : _createWork();
+              work != null ? _updateWork(work['id']) : _createWork();
               Navigator.pop(context);
             },
             child: const Text('Xác nhận'),
@@ -220,6 +233,7 @@ class _WWScreenState extends State<WWScreen> with SingleTickerProviderStateMixin
         maxAccepted: int.parse(_maxAcceptedController.text),
         maxReceiver: int.parse(_maxReceiverController.text),
         salary: double.parse(_salaryController.text),
+        companyId: selectedCompanyId!,
       );
       setState(() => works.add(result));
     } catch (e) {
@@ -236,6 +250,7 @@ class _WWScreenState extends State<WWScreen> with SingleTickerProviderStateMixin
         maxAccepted: int.parse(_maxAcceptedController.text),
         maxReceiver: int.parse(_maxReceiverController.text),
         salary: double.parse(_salaryController.text),
+        companyId: selectedCompanyId!,
       );
       setState(() {
         final index = works.indexWhere((w) => w['id'] == id);
@@ -256,13 +271,14 @@ class _WWScreenState extends State<WWScreen> with SingleTickerProviderStateMixin
   }
 
   Widget _buildWorkCard(Map<String, dynamic> work) {
+    final companyName = work['companyName'] ?? work['company'] ?? 'Không rõ';
     return _buildCard(
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(work['position'], style: _titleStyle),
           Text('Mô tả: ${work['descriptionWork']}', style: _textStyle),
-          Text('Công ty: ${work['company'] ?? "Không rõ"}', style: _textStyle),
+          Text('Công ty: $companyName', style: _textStyle),
           Text('Số người nhận: ${work['maxAccepted']}', style: _textStyle),
           Text('Số người nhận CV: ${work['maxReceiver']}', style: _textStyle),
           Text('Lương: ${work['salary']} VNĐ', style: _textStyle),

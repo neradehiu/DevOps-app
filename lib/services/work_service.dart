@@ -38,17 +38,9 @@ class WorkService {
     required int maxAccepted,
     required int maxReceiver,
     required double salary,
+    required int companyId, // <-- truyền từ UI
   }) async {
     final headers = await _getAuthHeaders();
-
-
-    final companies = await CompanyService.getMyCompanies();
-    if (companies.isEmpty) {
-      throw Exception('Không tìm thấy công ty nào để tạo công việc.');
-    }
-
-    final int companyId = companies[0]['id'];
-    print('[DEBUG] Using companyId: $companyId');
 
     final response = await http.post(
       Uri.parse(baseUrl),
@@ -59,7 +51,7 @@ class WorkService {
         'maxAccepted': maxAccepted,
         'maxReceiver': maxReceiver,
         'salary': salary,
-        'companyId': companyId,
+        'companyId': companyId, // <-- dùng đúng id
       }),
     );
 
@@ -73,7 +65,7 @@ class WorkService {
     }
   }
 
-  //
+//
   // static Future<List<Map<String, dynamic>>> getAllWorks() async {
   //   final headers = await _getAuthHeaders();
   //
@@ -125,15 +117,9 @@ class WorkService {
     required int maxAccepted,
     required int maxReceiver,
     required double salary,
+    required int companyId, // <-- truyền từ UI
   }) async {
     final headers = await _getAuthHeaders();
-
-    final companies = await CompanyService.getMyCompanies();
-    if (companies.isEmpty) {
-      throw Exception('Không tìm thấy công ty nào để cập nhật công việc.');
-    }
-
-    final int companyId = companies[0]['id'];
 
     final response = await http.put(
       Uri.parse('$baseUrl/$id'),
@@ -144,7 +130,7 @@ class WorkService {
         'maxAccepted': maxAccepted,
         'maxReceiver': maxReceiver,
         'salary': salary,
-        'companyId': companyId,
+        'companyId': companyId, // <-- truyền đúng công ty
       }),
     );
 

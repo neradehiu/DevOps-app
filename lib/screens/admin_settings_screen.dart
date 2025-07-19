@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import '../../controllers/theme_controller.dart';
+import 'change_password_screen.dart';
 
 class AdminSettingsScreen extends StatefulWidget {
   const AdminSettingsScreen({super.key});
@@ -56,7 +57,10 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
             Navigator.pushNamed(context, '/admin/profile');
           }),
           _buildSettingTile("Đổi mật khẩu", Icons.lock_reset, () {
-            // Điều hướng nếu có trang đổi mật khẩu
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
+            );
           }),
           _buildDarkModeSwitch(),
           _buildSettingTile("Thông tin ứng dụng", Icons.info, () {

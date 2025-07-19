@@ -37,17 +37,11 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
     }
   }
 
-  void _logout() async {
-    await storage.deleteAll(); // Xóa token, id, role,...
-    if (!mounted) return;
-    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-  }
-
   void handleNavigation(int index) {
     setState(() => selectedIndex = index);
     switch (index) {
       case 0:
-        Navigator.pushReplacementNamed(context, '/');
+        Navigator.pushReplacementNamed(context, '/admin/create');
         break;
       case 1:
         Navigator.push(
@@ -106,17 +100,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: _logout,
-              icon: const Icon(Icons.logout),
-              label: const Text("Đăng xuất"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-              ),
-            ),
+            // Đã xóa nút đăng xuất ở đây
           ],
         ),
       ),

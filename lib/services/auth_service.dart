@@ -41,10 +41,13 @@ class AuthService {
         final token = json['token'];
         final role = json['role'];
         final username = json['username'];
+        final id = json['id'];
 
+        // ✅ Lưu đầy đủ vào storage
         await storage.write(key: 'token', value: token);
         await storage.write(key: 'role', value: role);
         await storage.write(key: 'username', value: username);
+        await storage.write(key: 'id', value: id.toString());
 
         onSuccess(role);
         return null;
@@ -56,7 +59,6 @@ class AuthService {
       return 'Lỗi đăng nhập: $e';
     }
   }
-
 
   Future<String?> forgotPassword(String email) async {
     try {
