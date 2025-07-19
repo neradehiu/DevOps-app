@@ -406,63 +406,59 @@ class _UserScreenState extends State<UserScreen> {
                   }
                 },
                 child: Container(
-                  height: 120,
-                  margin: const EdgeInsets.only(bottom: 12),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                     gradient: const LinearGradient(
                       colors: [Color(0xFFB84DF1), Color(0xFF4ED0EB)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Flexible(
-                          fit: FlexFit.loose,
-                          child: Text(
-                            job['position'] ?? '',
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        job['position'] ?? '',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Công ty: ${job['company'] ?? ''}',
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                        Text(
-                          'Lương: ${job['salary']} VNĐ',
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                        const SizedBox(height: 4),
-                        if (currentUserRole != null && currentUserRole != 'ROLE_MANAGER' && currentUserRole != 'ROLE_ADMIN')
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton.icon(
-                              onPressed: () {
-                                final companyUsername = job['createdByUsername'];
-                                if (companyUsername != null) {
-                                  onPrivateChat(companyUsername);
-                                }
-                              },
-                              icon: const Icon(Icons.chat_bubble, color: Colors.white),
-                              label: Text(
-                                'Chat với ${job['createdByUsername'] ?? "..."}',
-                                style: const TextStyle(color: Colors.white),
-                              ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Công ty: ${job['company'] ?? ''}',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      Text(
+                        'Lương: ${job['salary']} VNĐ',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      const SizedBox(height: 8),
+                      if (currentUserRole != null &&
+                          currentUserRole != 'ROLE_MANAGER' &&
+                          currentUserRole != 'ROLE_ADMIN')
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton.icon(
+                            onPressed: () {
+                              final companyUsername = job['createdByUsername'];
+                              if (companyUsername != null) {
+                                onPrivateChat(companyUsername);
+                              }
+                            },
+                            icon: const Icon(Icons.chat_bubble, color: Colors.white),
+                            label: Text(
+                              'Chat với ${job['createdByUsername'] ?? "..."}',
+                              style: const TextStyle(color: Colors.white),
                             ),
                           ),
-                      ],
-                    ),
+                        ),
+                    ],
                   ),
                 ),
               );
