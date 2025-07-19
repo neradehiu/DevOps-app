@@ -9,6 +9,7 @@ import 'support_screen.dart';
 import 'notification_screen.dart';
 import 'profile_screen.dart';
 import 'group_chat_screen.dart';
+import 'private_chat_screen.dart';
 
 class UserScreen extends StatefulWidget {
   const UserScreen({super.key});
@@ -21,6 +22,7 @@ class _UserScreenState extends State<UserScreen> {
   final AuthService _authService = AuthService();
   int _currentIndex = 0;
   String? _username;
+  String? currentUserRole;
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> jobList = [];
   List<Map<String, dynamic>> filteredJobs = [];
@@ -30,7 +32,16 @@ class _UserScreenState extends State<UserScreen> {
     super.initState();
     loadUsername();
     loadJobs();
+    loadUserRole();
   }
+
+  Future<void> loadUserRole() async {
+    final role = await _authService.getRole();
+    setState(() {
+      currentUserRole = role;
+    });
+  }
+
 
   Future<void> loadUsername() async {
     final name = await _authService.getUsername();
@@ -76,7 +87,7 @@ class _UserScreenState extends State<UserScreen> {
     if (role == 'ROLE_MANAGER') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const WWScreen()), // ĐÃ GỘP TOÀN BỘ
+        MaterialPageRoute(builder: (context) => const WWScreen()),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -97,19 +108,21 @@ class _UserScreenState extends State<UserScreen> {
         context: context,
         builder: (_) => AlertDialog(
           title: Text(company['name'] ?? 'Thông tin công ty'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Mô tả: ${company['descriptionCompany'] ?? ''}'),
-              const SizedBox(height: 8),
-              Text('Loại hình: ${company['type'] ?? ''}'),
-              const SizedBox(height: 8),
-              Text('Địa chỉ: ${company['address'] ?? ''}'),
-              const SizedBox(height: 8),
-              Text(
-                  'Công khai: ${company['isPublic'] == true ? 'Có' : 'Không'}'),
-            ],
+          // ↓ Thay `content: Column(...)` thành:
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Mô tả: ${company['descriptionCompany'] ?? ''}'),
+                const SizedBox(height: 8),
+                Text('Loại hình: ${company['type'] ?? ''}'),
+                const SizedBox(height: 8),
+                Text('Địa chỉ: ${company['address'] ?? ''}'),
+                const SizedBox(height: 8),
+                Text('Công khai: ${company['isPublic'] == true ? 'Có' : 'Không'}'),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -124,6 +137,15 @@ class _UserScreenState extends State<UserScreen> {
         SnackBar(content: Text('Không thể hiển thị chi tiết công ty: $e')),
       );
     }
+  }
+
+  void onPrivateChat(String receiverUsername) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PrivateChatScreen(receiverUsername: receiverUsername),
+      ),
+    );
   }
 
   Widget buildCircleButton({
@@ -198,8 +220,8 @@ class _UserScreenState extends State<UserScreen> {
                 },
                 child: const Text(
                   'Danh sách công ty',
-                  style: TextStyle(
-                      color: Colors.black, fontWeight: FontWeight.bold),
+                  style:
+                  TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -363,7 +385,7 @@ class _UserScreenState extends State<UserScreen> {
                   }
                 },
                 child: Container(
-                  height: 100,
+                  height: 120,
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
@@ -378,12 +400,18 @@ class _UserScreenState extends State<UserScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          job['position'] ?? '',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16),
+                        Flexible(
+                          fit: FlexFit.loose,
+                          child: Text(
+                            job['position'] ?? '',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16
+                            ),
+                            maxLines: 1,               // force single line
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -394,6 +422,24 @@ class _UserScreenState extends State<UserScreen> {
                           'Lương: ${job['salary']} VNĐ',
                           style: const TextStyle(color: Colors.white),
                         ),
+                        const SizedBox(height: 4),
+                        if (currentUserRole != null && currentUserRole != 'ROLE_MANAGER' && currentUserRole != 'ROLE_ADMIN')
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton.icon(
+                              onPressed: () {
+                                final companyUsername = job['createdByUsername'];
+                                if (companyUsername != null) {
+                                  onPrivateChat(companyUsername);
+                                }
+                              },
+                              icon: const Icon(Icons.chat_bubble, color: Colors.white),
+                              label: Text(
+                                'Chat với ${job['createdByUsername'] ?? "..."}',
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),

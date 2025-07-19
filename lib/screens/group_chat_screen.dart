@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/group_chat_service.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -24,12 +25,38 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
   Future<void> _initUsernameAndConnect() async {
     _username = await storage.read(key: 'username');
+    if (_username == null) {
+      print('⚠️ _username bị null, không thể kết nối chat.');
+      return;
+    }
+
+    print('🧑 Tên người dùng: $_username');
 
     await _chatService.connect(
       onMessageReceived: (data) {
+        print('📨 Nhận message: ${jsonEncode(data)}');
+
         setState(() {
-          _messages.add(data);
+          final index = _messages.indexWhere((m) => m['id'] == data['id']);
+          if (index != -1) {
+            _messages[index] = data;
+          } else {
+            _messages.add(data);
+          }
         });
+
+        final isMe = data['sender'] == _username;
+        final readByUsers = (data['readByUsers'] is List)
+            ? List<String>.from(data['readByUsers'] ?? [])
+            : <String>[];
+
+        if (!isMe && !readByUsers.contains(_username)) {
+          final messageId = data['id'];
+          if (messageId != null) {
+            print('📤 Gửi markAsRead cho messageId: $messageId');
+            _chatService.markAsReadWebSocket(messageId);
+          }
+        }
       },
       onConnect: () => print("✅ Đã kết nối group chat"),
     );
@@ -61,6 +88,11 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
               itemBuilder: (_, index) {
                 final msg = _messages[index];
                 final isMe = msg['sender'] == _username;
+
+                final readByUsers = (msg['readByUsers'] is List)
+                    ? List<String>.from(msg['readByUsers'] ?? [])
+                    : <String>[];
+
                 return Align(
                   alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                   child: Container(
@@ -70,9 +102,25 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                       color: isMe ? Colors.blueAccent : Colors.grey[300],
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Text(
-                      '${msg['sender']}: ${msg['content']}',
-                      style: TextStyle(color: isMe ? Colors.white : Colors.black),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${msg['sender']}: ${msg['content']}',
+                          style: TextStyle(color: isMe ? Colors.white : Colors.black),
+                        ),
+                        if (readByUsers.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Text(
+                              '✓ Đã đọc bởi: ${readByUsers.join(', ')}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isMe ? Colors.white70 : Colors.black54,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 );

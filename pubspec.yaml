@@ -38,6 +38,7 @@ dependencies:
   jwt_decoder: ^2.0.1
   web_socket_channel: ^2.4.0
   stomp_dart_client: ^0.4.4
+  get_storage: ^2.1.1
 
 
 

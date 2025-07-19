@@ -73,20 +73,46 @@ class WorkService {
     }
   }
 
+  //
+  // static Future<List<Map<String, dynamic>>> getAllWorks() async {
+  //   final headers = await _getAuthHeaders();
+  //
+  //   final response = await http.get(
+  //     Uri.parse(baseUrl),
+  //     headers: headers,
+  //   );
+  //
+  //   print('[DEBUG] Get works response: ${response.statusCode}');
+  //   print('[DEBUG] Response body: ${response.body}');
+  //
+  //   if (response.statusCode == 200) {
+  //     final List<dynamic> data = jsonDecode(response.body);
+  //     return data.cast<Map<String, dynamic>>();
+  //   } else {
+  //     throw Exception('Không thể tải danh sách công việc: ${response.statusCode}');
+  //   }
+  // }
+
   static Future<List<Map<String, dynamic>>> getAllWorks() async {
     final headers = await _getAuthHeaders();
-
-    final response = await http.get(
-      Uri.parse(baseUrl),
-      headers: headers,
-    );
+    final response = await http.get(Uri.parse(baseUrl), headers: headers);
 
     print('[DEBUG] Get works response: ${response.statusCode}');
     print('[DEBUG] Response body: ${response.body}');
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
-      return data.cast<Map<String, dynamic>>();
+      return data.map<Map<String, dynamic>>((e) {
+        return {
+          'id': e['id'],
+          'position': e['position'],
+          'descriptionWork': e['descriptionWork'],
+          'salary': e['salary'],
+          'companyId': e['companyId'],
+          'company': e['companyName'],
+          'createdByUsername': e['createdByUsername']
+        };
+      }).toList();
     } else {
       throw Exception('Không thể tải danh sách công việc: ${response.statusCode}');
     }
