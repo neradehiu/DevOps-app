@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../models/account.dart';
 import '../../services/admin_service.dart';
+import '../services/GlobalContext.dart';
+import '../services/auth_service.dart';
 import 'admin_create_account_screen.dart';
 import 'ww_screen.dart';
-
+import 'group_chat_screen.dart';
+import 'private_chat_screen.dart';
+import 'user_screen.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -14,14 +18,23 @@ class AdminScreen extends StatefulWidget {
 }
 
 class _AdminScreenState extends State<AdminScreen> {
+  final AuthService _authService = AuthService();
   final AdminService adminService = AdminService();
   final storage = FlutterSecureStorage();
   List<Account> accounts = [];
   int selectedIndex = 0;
+  String? _selectedRole;
+  List<Account> _filteredAccounts = [];
+
 
   @override
   void initState() {
     super.initState();
+
+    final username = GlobalContext.currentUsername;
+    final chatService = GlobalContext.chatService;
+
+    print("✅ AdminScreen init với username = $username");
     loadAccounts();
   }
 
@@ -33,11 +46,23 @@ class _AdminScreenState extends State<AdminScreen> {
       final result = await adminService.getAllAccounts(token);
       setState(() {
         accounts = result;
+        _applyRoleFilter();
       });
     } catch (e) {
       print('Error loading accounts: $e');
     }
   }
+
+  void _applyRoleFilter() {
+    if (_selectedRole == null) {
+      _filteredAccounts = List.from(accounts);
+    } else {
+      _filteredAccounts = accounts
+          .where((acc) => acc.role.toLowerCase() == _selectedRole!.toLowerCase())
+          .toList();
+    }
+  }
+
 
   Future<void> handleLockToggle(Account acc) async {
     final token = await storage.read(key: 'token');
@@ -71,6 +96,47 @@ class _AdminScreenState extends State<AdminScreen> {
       await adminService.deleteUser(acc.id, token);
       await loadAccounts();
     }
+  }
+
+  void onChatPressed(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const GroupChatScreen()),
+    );
+  }
+
+  void onScreenHome(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const UserScreen()),
+    );
+  }
+
+  void onWWPressed(BuildContext context) async {
+    final role = await _authService.getRole();
+    if (role == 'ROLE_MANAGER' || role == 'ROLE_ADMIN') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const WWScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Chức năng tuyển dụng của riêng doanh nghiệp, liên hệ admin để đăng ký tài khoản doanh nghiệp ngay!",
+          ),
+        ),
+      );
+    }
+  }
+
+  void onPrivateChat(String receiverUsername) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PrivateChatScreen(receiverUsername: receiverUsername),
+      ),
+    );
   }
 
   void showEditDialog(Account acc) {
@@ -174,11 +240,32 @@ class _AdminScreenState extends State<AdminScreen> {
               children: [
                 ElevatedButton(
                   onPressed: loadAccounts,
-                  child: const Text("DANH SÁCH"),
+                  child: const Text("DANH SÁCH", style: TextStyle(fontWeight: FontWeight.bold),),
                 ),
-                IconButton(
+                PopupMenuButton<String>(
                   icon: const Icon(Icons.filter_list, color: Colors.indigo),
-                  onPressed: () {},
+                  onSelected: (role) {
+                    setState(() {
+                      _selectedRole = (role == 'ALL') ? null : role;
+                      _applyRoleFilter();
+                    });
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(value: 'ROLE_ADMIN', child: Text('Admin')),
+                    const PopupMenuItem(value: 'ROLE_MANAGER', child: Text('Manager')),
+                    const PopupMenuItem(value: 'ROLE_USER', child: Text('User')),
+                    const PopupMenuItem(value: 'ALL', child: Text('Tất cả')),
+                  ],
+                ),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.group),
+                  label: const Text('Group Chat'),
+                  onPressed: () => onChatPressed(context),
+                ),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.home),
+                  label: const Text('Tìm việc 24h'),
+                  onPressed: () => onScreenHome(context),
                 ),
               ],
             ),
@@ -187,37 +274,72 @@ class _AdminScreenState extends State<AdminScreen> {
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(10),
-              children: accounts.map(buildAccountItem).toList(),
+              children: _filteredAccounts.map(buildAccountItem).toList(),
             ),
           ),
         ],
       ),
-      floatingActionButton: Container(
-        width: 60,
-        height: 60,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFB84DF1), Color(0xFF4ED0EB)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+      floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            margin: const EdgeInsets.only(right: 10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFFF48FB1), Color(0xFFFFC107)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.deepPurple, width: 2),
+            ),
+            child: FloatingActionButton(
+              heroTag: 'adminBtn',
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AdminScreen()),
+                );
+              },
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              child: const Text(
+                "AD",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
           ),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.pink, width: 2),
-        ),
-        child: FloatingActionButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const WWScreen()),
-            );
-          },
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: Text(
-            "WW",
-            style: TextStyle(fontWeight: FontWeight.bold),
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFFB84DF1), Color(0xFF4ED0EB)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.pink, width: 2),
+            ),
+            child: FloatingActionButton(
+              heroTag: 'wwBtn',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const WWScreen()),
+                );
+              },
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              child: const Text(
+                "WW",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: selectedIndex,

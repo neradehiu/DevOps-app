@@ -1,6 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../services/admin_service.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../models/account.dart';
+import '../../services/admin_service.dart';
+import '../services/auth_service.dart';
+import 'admin_create_account_screen.dart';
+import 'ww_screen.dart';
+import 'admin_screen.dart';
+import 'group_chat_screen.dart';
+import 'private_chat_screen.dart';
+
 
 class AdminCreateAccountScreen extends StatefulWidget {
   const AdminCreateAccountScreen({super.key});
@@ -259,6 +270,68 @@ class _AdminCreateAccountScreenState extends State<AdminCreateAccountScreen> {
             )
           ],
         ),
+      ),
+      floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            margin: const EdgeInsets.only(right: 10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFFF48FB1), Color(0xFFFFC107)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.deepPurple, width: 2),
+            ),
+            child: FloatingActionButton(
+              heroTag: 'adminBtn',
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AdminScreen()),
+                );
+              },
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              child: const Text(
+                "AD",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFFB84DF1), Color(0xFF4ED0EB)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.pink, width: 2),
+            ),
+            child: FloatingActionButton(
+              heroTag: 'wwBtn',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const WWScreen()),
+                );
+              },
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              child: const Text(
+                "WW",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 1,

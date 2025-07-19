@@ -134,73 +134,85 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Chat với ${widget.receiverUsername}')),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-              controller: _scrollController,
-              reverse: true,
-              itemCount: _messages.length,
-              itemBuilder: (_, index) {
-                final msg = _messages[index];
-                final isSender = msg['isSender'] == true;
-                final timestamp = DateTime.tryParse(msg['timestamp'] ?? '')?.toLocal();
-                final readBy = (msg['readByUsers'] as List).join(", ");
-
-                return Align(
-                  alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isSender ? Colors.blue[200] : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(msg['content'] ?? '', style: const TextStyle(fontSize: 16)),
-                        const SizedBox(height: 4),
-                        if (timestamp != null)
-                          Text(
-                            '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')} ${timestamp.day}/${timestamp.month}',
-                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                          ),
-                        if (readBy.isNotEmpty)
-                          Text(
-                            'Đã đọc bởi: $readBy',
-                            style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-                          ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+          Positioned.fill(
+            child: Image.asset(
+              'lib/assets/images/chat.png',
+              fit: BoxFit.cover,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    decoration: const InputDecoration(
-                      hintText: 'Nhập tin nhắn...',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
+          Column(
+            children: [
+              Expanded(
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : ListView.builder(
+                  controller: _scrollController,
+                  reverse: true,
+                  itemCount: _messages.length,
+                  itemBuilder: (_, index) {
+                    final msg = _messages[index];
+                    final isSender = msg['isSender'] == true;
+                    final timestamp = DateTime.tryParse(msg['timestamp'] ?? '')?.toLocal();
+                    final readBy = (msg['readByUsers'] as List).join(", ");
+
+                    return Align(
+                      alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isSender ? Colors.blue[200]?.withOpacity(0.9) : Colors.grey[300]?.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(msg['content'] ?? '', style: const TextStyle(fontSize: 16)),
+                            const SizedBox(height: 4),
+                            if (timestamp != null)
+                              Text(
+                                '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')} ${timestamp.day}/${timestamp.month}',
+                                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                              ),
+                            if (readBy.isNotEmpty)
+                              Text(
+                                'Đã đọc bởi: $readBy',
+                                style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _sendMessage,
-                  child: const Icon(Icons.send),
-                )
-              ],
-            ),
-          )
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _messageController,
+                        decoration: const InputDecoration(
+                          hintText: 'Nhập tin nhắn...',
+                          border: OutlineInputBorder(),
+                          filled: true,
+                          fillColor: Colors.white70,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: _sendMessage,
+                      child: const Icon(Icons.send),
+                    )
+                  ],
+                ),
+              )
+            ],
+          ),
         ],
       ),
     );

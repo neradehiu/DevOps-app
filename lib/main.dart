@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'controllers/theme_controller.dart';
 
 import 'screens/admin_create_account_screen.dart';
@@ -10,15 +11,36 @@ import 'screens/login_screen.dart';
 import 'screens/user_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/forgot_password_screen.dart';
+import 'services/private_chat_service.dart';
 
-void main() {
-  // Đăng ký ThemeController để dùng trong toàn app
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   Get.put(ThemeController());
-  runApp(const MyApp());
+  final storage = FlutterSecureStorage();
+
+  // Đọc username và khởi tạo chat service
+  final String? username = await storage.read(key: 'username');
+  final PrivateChatService chatService = PrivateChatService();
+
+  if (username != null) {
+    await chatService.connect(onMessageReceived: (msg) {
+      print('📩 Tin nhắn nhận: $msg');
+    });
+  }
+
+  runApp(MyApp(
+    chatService: chatService,
+  ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final PrivateChatService chatService;
+
+  const MyApp({
+    super.key,
+    required this.chatService,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +67,14 @@ class MyApp extends StatelessWidget {
         GetPage(name: '/register', page: () => const RegisterScreen()),
         GetPage(name: '/forgot-password', page: () => const ForgotPasswordScreen()),
         GetPage(name: '/admin/create', page: () => const AdminCreateAccountScreen()),
-        GetPage(name: '/admin/reports', page: () => const AdminNotificationsScreen()),
+
+        GetPage(
+          name: '/admin/reports',
+          page: () => AdminNotificationsScreen(
+            chatService: chatService, // Không cần truyền currentUsername nữa
+          ),
+        ),
+
         GetPage(name: '/admin/profile', page: () => const AdminProfileScreen()),
         GetPage(name: '/admin/settings', page: () => const AdminSettingsScreen()),
       ],

@@ -80,71 +80,92 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Group Chat')),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: _messages.length,
-              itemBuilder: (_, index) {
-                final msg = _messages[index];
-                final isMe = msg['sender'] == _username;
-
-                final readByUsers = (msg['readByUsers'] is List)
-                    ? List<String>.from(msg['readByUsers'] ?? [])
-                    : <String>[];
-
-                return Align(
-                  alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: isMe ? Colors.blueAccent : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${msg['sender']}: ${msg['content']}',
-                          style: TextStyle(color: isMe ? Colors.white : Colors.black),
-                        ),
-                        if (readByUsers.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4.0),
-                            child: Text(
-                              '✓ Đã đọc bởi: ${readByUsers.join(', ')}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: isMe ? Colors.white70 : Colors.black54,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+          Positioned.fill(
+            child: Image.asset(
+              'lib/assets/images/chat.png',
+              fit: BoxFit.cover,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    decoration: const InputDecoration(
-                      hintText: 'Nhập tin nhắn...',
+          Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _messages.length,
+                  itemBuilder: (_, index) {
+                    final msg = _messages[index];
+                    final isMe = msg['sender'] == _username;
+                    final timestamp = DateTime.tryParse(msg['timestamp'] ?? '')?.toLocal();
+
+                    final readByUsers = (msg['readByUsers'] is List)
+                        ? List<String>.from(msg['readByUsers'] ?? [])
+                        : <String>[];
+
+                    return Align(
+                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: isMe ? Colors.blueAccent.withOpacity(0.8) : Colors.grey[300]!.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${msg['sender']}: ${msg['content']}',
+                              style: TextStyle(color: isMe ? Colors.white : Colors.black),
+                            ),
+                            if (timestamp != null)
+                              Text(
+                                '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')} ${timestamp.day}/${timestamp.month}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isMe ? Colors.white70 : Colors.black54,
+                                ),
+                              ),
+                            if (readByUsers.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4.0),
+                                child: Text(
+                                  '✓ Đã đọc bởi: ${readByUsers.join(', ')}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: isMe ? Colors.white70 : Colors.black54,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _messageController,
+                        decoration: const InputDecoration(
+                          hintText: 'Nhập tin nhắn...',
+                          fillColor: Colors.white,
+                          filled: true,
+                        ),
+                      ),
                     ),
-                  ),
+                    IconButton(
+                      icon: const Icon(Icons.send),
+                      onPressed: _sendMessage,
+                    ),
+                  ],
                 ),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: _sendMessage,
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),

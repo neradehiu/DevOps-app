@@ -1,14 +1,26 @@
 import 'package:flutter/material.dart';
+import '../services/GlobalContext.dart';
+import 'ww_screen.dart';
+import 'admin_screen.dart';
+import '../services/private_chat_service.dart';
+import 'private_inbox_screen.dart';
+import '../services/auth_service.dart';
 
 class AdminNotificationsScreen extends StatefulWidget {
-  const AdminNotificationsScreen({super.key});
+  final PrivateChatService chatService;
+
+  const AdminNotificationsScreen({
+    super.key,
+    required this.chatService,
+  });
 
   @override
   State<AdminNotificationsScreen> createState() => _AdminNotificationsScreenState();
 }
 
 class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
-  // Danh sách thông báo mẫu
+  String _username = '';
+
   List<Map<String, String>> notifications = [
     {
       'title': 'Tài khoản mới',
@@ -17,7 +29,7 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
     },
     {
       'title': 'Báo cáo lỗi',
-      'message': 'Người dùng Báo cáo lỗi hệ thống.',
+      'message': 'Người dùng đã báo cáo lỗi hệ thống.',
       'time': '1 giờ trước'
     },
     {
@@ -28,38 +40,95 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadUsername();
+  }
+
+  Future<void> _loadUsername() async {
+    final authService = AuthService();
+    final name = await authService.getUsername();
+    if (name != null && name.isNotEmpty) {
+      setState(() {
+        _username = name;
+      });
+      GlobalContext.currentUsername = name;
+      GlobalContext.chatService = widget.chatService;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("THÔNG BÁO"),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.red),
-            onPressed: () {
-              // TODO: handle logout
-            },
-          )
-        ],
       ),
-      body: ListView.builder(
+      body: Padding(
         padding: const EdgeInsets.all(16),
-        itemCount: notifications.length,
-        itemBuilder: (context, index) {
-          final item = notifications[index];
-          return Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-            elevation: 3,
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            child: ListTile(
-              leading: const Icon(Icons.notifications, color: Colors.deepPurple),
-              title: Text(item['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text(item['message'] ?? ''),
-              trailing: Text(item['time'] ?? '', style: const TextStyle(fontSize: 12)),
+        child: Column(
+          children: [
+            ElevatedButton.icon(
+              onPressed: _username.isEmpty
+                  ? null
+                  : () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PrivateInboxScreen(
+                      currentUsername: _username,
+                      chatService: widget.chatService,
+                    ),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF9D4EDD),
+              ),
+              icon: const Icon(Icons.mail, color: Colors.white),
+              label: const Text('Hộp thư riêng', style: TextStyle(color: Colors.white)),
             ),
-          );
-        },
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFB84DF1), Color(0xFF4ED0EB)],
+                ),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Đánh dấu tất cả đã đọc')),
+                  );
+                },
+                child: const Text('Đánh dấu tất cả đã đọc', style: TextStyle(color: Colors.white)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: ListView.builder(
+                itemCount: notifications.length,
+                itemBuilder: (context, index) {
+                  final item = notifications[index];
+                  return Card(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    elevation: 3,
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    child: ListTile(
+                      leading: const Icon(Icons.notifications, color: Colors.deepPurple),
+                      title: Text(item['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Text(item['message'] ?? ''),
+                      trailing: Text(item['time'] ?? '', style: const TextStyle(fontSize: 12)),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 2,
@@ -90,6 +159,64 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Tài khoản của tôi'),
           BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Cài đặt'),
         ],
+      ),
+      floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          buildCircleButton(
+            label: "AD",
+            gradientColors: [Color(0xFFF48FB1), Color(0xFFFFC107)],
+            borderColor: Colors.deepPurple,
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AdminScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 10),
+          buildCircleButton(
+            label: "WW",
+            gradientColors: [Color(0xFFB84DF1), Color(0xFF4ED0EB)],
+            borderColor: Colors.pink,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const WWScreen()),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildCircleButton({
+    required String label,
+    required List<Color> gradientColors,
+    required Color borderColor,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: gradientColors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        shape: BoxShape.circle,
+        border: Border.all(color: borderColor, width: 2),
+      ),
+      child: FloatingActionButton(
+        heroTag: label,
+        onPressed: onPressed,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }

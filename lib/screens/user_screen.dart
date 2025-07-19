@@ -10,6 +10,8 @@ import 'notification_screen.dart';
 import 'profile_screen.dart';
 import 'group_chat_screen.dart';
 import 'private_chat_screen.dart';
+import 'admin_screen.dart';
+
 
 class UserScreen extends StatefulWidget {
   const UserScreen({super.key});
@@ -54,13 +56,7 @@ class _UserScreenState extends State<UserScreen> {
     try {
       final jobs = await WorkService.getAllWorks();
       for (var job in jobs) {
-        if (job['companyId'] != null) {
-          final company =
-          await CompanyService.getCompanyById(job['companyId']);
-          job['company'] = company['name'] ?? 'Không rõ';
-        } else {
-          job['company'] = 'Không rõ';
-        }
+        final company = job['companyName']?.toLowerCase() ?? '';
       }
       setState(() {
         jobList = jobs;
@@ -94,7 +90,7 @@ class _UserScreenState extends State<UserScreen> {
 
   void onWWPressed(BuildContext context) async {
     final role = await _authService.getRole();
-    if (role == 'ROLE_MANAGER') {
+    if (role == 'ROLE_MANAGER' || role == 'ROLE_ADMIN') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const WWScreen()),
@@ -275,6 +271,22 @@ class _UserScreenState extends State<UserScreen> {
                 TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),
+            if (currentUserRole == 'ROLE_ADMIN')
+              buildCircleButton(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AdminScreen()),
+                  );
+                },
+                child: const Text(
+                  'AD',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
