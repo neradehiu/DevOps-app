@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -22,7 +23,7 @@ class WorkAcceptanceService {
   }
 
   /// 1. Nhận việc (POST /api/works/{workId}/acceptances)
-  static Future<bool> acceptWork(int workId, int accountId) async {
+  static Future<bool> acceptWork(BuildContext context, int workId, int accountId) async {
     final url = Uri.parse('$baseUrl/$workId/acceptances');
     final headers = await _getHeaders();
 
@@ -32,7 +33,16 @@ class WorkAcceptanceService {
     });
 
     final response = await http.post(url, headers: headers, body: body);
+
+    if (response.statusCode == 401 && response.body.contains("Tài khoản đã bị khóa")) {
+      final storage = FlutterSecureStorage();
+      await storage.deleteAll(); // Xóa token
+      Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false); // Logout
+      return false;
+    }
+
     return response.statusCode == 200;
+
   }
 
   /// 2. Lấy danh sách người đã nhận việc (GET /api/works/{workId}/acceptances)

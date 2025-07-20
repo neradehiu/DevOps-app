@@ -561,7 +561,7 @@ class _UserScreenState extends State<UserScreen> {
                                 onPressed: () async {
                                   final workId = job['id'];
                                   if (workId != null && _accountId != null) {
-                                    final success = await WorkAcceptanceService.acceptWork(workId, _accountId!);
+                                    final success = await WorkAcceptanceService.acceptWork(context, workId, _accountId!);
                                     if (success) {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(content: Text('Nhận việc thành công!')),

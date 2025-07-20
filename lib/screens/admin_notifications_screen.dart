@@ -5,6 +5,8 @@ import 'admin_screen.dart';
 import '../services/private_chat_service.dart';
 import 'private_inbox_screen.dart';
 import '../services/auth_service.dart';
+import 'report_list_screen.dart';
+
 
 class AdminNotificationsScreen extends StatefulWidget {
   final PrivateChatService chatService;
@@ -88,6 +90,22 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
               ),
               icon: const Icon(Icons.mail, color: Colors.white),
               label: const Text('Hộp thư riêng', style: TextStyle(color: Colors.white)),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ReportListScreen(), // gọi màn hình vừa tạo
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+              ),
+              icon: const Icon(Icons.report, color: Colors.white),
+              label: const Text('Xem báo cáo', style: TextStyle(color: Colors.white)),
             ),
             const SizedBox(height: 12),
             Container(
