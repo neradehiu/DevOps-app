@@ -264,7 +264,7 @@ class _AdminScreenState extends State<AdminScreen> {
                 ),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.home),
-                  label: const Text('Tìm việc 24h'),
+                  label: const Text('Trang chủ'),
                   onPressed: () => onScreenHome(context),
                 ),
               ],
@@ -283,8 +283,8 @@ class _AdminScreenState extends State<AdminScreen> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           Container(
-            width: 60,
-            height: 60,
+            width: 50,
+            height: 50,
             margin: const EdgeInsets.only(right: 10),
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -312,8 +312,8 @@ class _AdminScreenState extends State<AdminScreen> {
             ),
           ),
           Container(
-            width: 60,
-            height: 60,
+            width: 50,
+            height: 50,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [Color(0xFFB84DF1), Color(0xFF4ED0EB)],

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -70,10 +71,46 @@ class WorkAcceptanceService {
       int workId, int acceptanceId, String newStatus) async {
     final url = Uri.parse('$baseUrl/$workId/acceptances/$acceptanceId/status');
     final headers = await _getHeaders();
-
     final body = jsonEncode({'status': newStatus});
 
-    final response = await http.put(url, headers: headers, body: body);
-    return response.statusCode == 200;
+    try {
+      final response = await http.put(url, headers: headers, body: body);
+
+      print('📦 Request: PUT $url');
+      print('📤 Body: $body');
+      print('📥 Status: ${response.statusCode}');
+      print('📥 Response: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        final decoded = jsonDecode(response.body);
+        final error = decoded['error']?.toString().toUpperCase() ?? '';
+
+        print('❗ Lỗi backend: $error');
+
+        if (error.contains("COMPLETED")) {
+          throw Exception("Công việc đã kết thúc, không thể thay đổi.");
+        } else if (error.contains("CANCELLED")) {
+          throw Exception("Bạn đã hủy công việc, không thể nhận lại để tránh spam.");
+        } else if (error.contains("BẠN KHÔNG CÓ QUYỀN")) {
+          throw Exception("Bạn không có quyền cập nhật trạng thái công việc này.");
+        } else {
+          throw Exception("Đã xảy ra lỗi không xác định từ máy chủ.");
+        }
+      }
+    } on FormatException catch (e) {
+      print('❌ FormatException (JSON?): $e');
+      throw Exception("Phản hồi không hợp lệ từ máy chủ.");
+    } on SocketException catch (e) {
+      print('❌ SocketException: $e');
+      throw Exception("Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng.");
+    } catch (e) {
+      print('❌ Exception khi gọi API: $e');
+      throw Exception(e.toString()); // Trả lại lỗi thật
+    }
   }
+
+
+
 }

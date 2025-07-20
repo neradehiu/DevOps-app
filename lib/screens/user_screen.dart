@@ -337,6 +337,7 @@ class _UserScreenState extends State<UserScreen> {
               child: const Icon(Icons.message_rounded,
                   color: Colors.white, size: 24),
             ),
+            if (currentUserRole == 'ROLE_USER')
             buildCircleButton(
               onTap: () {
                 if (_accountId != null) {
@@ -468,34 +469,6 @@ class _UserScreenState extends State<UserScreen> {
           ),
         ),
         const SizedBox(height: 10),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Lọc theo trạng thái:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              DropdownButton<String>(
-                value: selectedStatus,
-                onChanged: (value) {
-                  setState(() {
-                    selectedStatus = value!;
-                  });
-                  loadJobs();
-                },
-                items: statusOptions.map((status) {
-                  return DropdownMenuItem(
-                    value: status,
-                    child: Text(status),
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
         const Padding(
           padding: EdgeInsets.only(left: 16),
           child: Align(
@@ -558,13 +531,11 @@ class _UserScreenState extends State<UserScreen> {
                         style: const TextStyle(color: Colors.white),
                       ),
                       const SizedBox(height: 8),
-                      if (currentUserRole != null &&
-                          currentUserRole != 'ROLE_MANAGER' &&
-                          currentUserRole != 'ROLE_ADMIN')
+                      if (currentUserRole != null)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            if (job['hasAccepted'] == true)
+                            if (job['hasAccepted'] == true || currentUserRole == 'ROLE_ADMIN' || currentUserRole == 'ROLE_MANAGER')
                               ElevatedButton.icon(
                                 onPressed: () {
                                   Navigator.push(
@@ -573,6 +544,7 @@ class _UserScreenState extends State<UserScreen> {
                                       builder: (_) => ListWorkAcceptScreen(workId: job['id']),
                                     ),
                                   );
+                                  loadJobs();
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.green,
@@ -580,8 +552,8 @@ class _UserScreenState extends State<UserScreen> {
                                 ),
                                 icon: const Icon(Icons.info_outline),
                                 label: const Text('Check thông tin'),
-                              )
-                            else
+                              ),
+                            if (job['hasAccepted'] != true && currentUserRole == 'ROLE_USER')
                               ElevatedButton.icon(
                                 onPressed: () async {
                                   final workId = job['id'];
@@ -607,6 +579,7 @@ class _UserScreenState extends State<UserScreen> {
                                 label: const Text('Nhận việc'),
                               ),
                             const SizedBox(width: 8),
+                            if (currentUserRole == 'ROLE_USER')
                             TextButton.icon(
                               onPressed: () {
                                 final companyUsername = job['createdByUsername'];
