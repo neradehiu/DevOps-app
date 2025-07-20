@@ -541,7 +541,10 @@ class _UserScreenState extends State<UserScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => ListWorkAcceptScreen(workId: job['id']),
+                                      builder: (_) => ListWorkAcceptScreen(
+                                        workId: job['id'],
+                                        createdByUsername: job['createdByUsername'], // 👈 Thêm dòng này
+                                      ),
                                     ),
                                   );
                                   loadJobs();
@@ -566,7 +569,7 @@ class _UserScreenState extends State<UserScreen> {
                                       setState(() => job['hasAccepted'] = true); // cập nhật ngay
                                     } else {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Nhận việc thất bại!')),
+                                        const SnackBar(content: Text('Công việc đã đủ người <hoặc bạn đã từng hủy việc này>!')),
                                       );
                                     }
                                   }

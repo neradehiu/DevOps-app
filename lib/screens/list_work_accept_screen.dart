@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 import '../services/work_acceptance_service.dart';
+import '../services/report_service.dart';
+
 
 class ListWorkAcceptScreen extends StatefulWidget {
   final int workId;
+  final String createdByUsername;
 
-  const ListWorkAcceptScreen({super.key, required this.workId});
+  const ListWorkAcceptScreen({super.key, required this.workId, required this.createdByUsername,});
 
   @override
   State<ListWorkAcceptScreen> createState() => _ListWorkAcceptScreenState();
@@ -12,11 +16,89 @@ class ListWorkAcceptScreen extends StatefulWidget {
 
 class _ListWorkAcceptScreenState extends State<ListWorkAcceptScreen> {
   late Future<List<dynamic>> _futureAcceptances;
+  String? currentUserRole;
+  final AuthService _authService = AuthService();
+  String? currentUsername;
+
 
   @override
   void initState() {
     super.initState();
+    loadUserRole();
+    loadUserInfo();
     _futureAcceptances = WorkAcceptanceService.getAcceptancesByWork(widget.workId);
+  }
+
+  Future<void> loadUserInfo() async {
+    final role = await _authService.getRole();
+    final username = await _authService.getUsername();
+
+    setState(() {
+      currentUserRole = role;
+      currentUsername = username;
+    });
+  }
+
+  Future<void> loadUserRole() async {
+    final role = await _authService.getRole();
+    setState(() {
+      currentUserRole = role;
+    });
+  }
+
+  void _showReportDialog(int reportedAccountId) {
+    final TextEditingController _reasonController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Báo cáo người dùng'),
+          content: TextField(
+            controller: _reasonController,
+            decoration: const InputDecoration(
+              labelText: 'Lý do báo cáo',
+              border: OutlineInputBorder(),
+            ),
+            maxLines: 3,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final reason = _reasonController.text.trim();
+                if (reason.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Vui lòng nhập lý do')),
+                  );
+                  return;
+                }
+
+                final success = await ReportService.reportUser(
+                  reportedAccountId: reportedAccountId,
+                  reason: reason,
+                );
+
+                Navigator.of(context).pop(); // Đóng dialog
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      success ? 'Báo cáo thành công' : 'Báo cáo thất bại',
+                    ),
+                    backgroundColor: success ? Colors.green : Colors.red,
+                  ),
+                );
+              },
+              child: const Text('Gửi báo cáo'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _updateStatus(int acceptanceId, String newStatus) async {
@@ -99,6 +181,18 @@ class _ListWorkAcceptScreenState extends State<ListWorkAcceptScreen> {
                                 child: Text(status),
                               );
                             }).toList(),
+                          ),
+                          const SizedBox(height: 4),
+                          if ((currentUserRole == 'ROLE_ADMIN' || currentUserRole == 'ROLE_MANAGER') &&
+                              currentUsername == widget.createdByUsername)
+                          ElevatedButton.icon(
+                            onPressed: () => _showReportDialog(user['accountId']),
+                            icon: const Icon(Icons.report, color: Colors.white),
+                            label: const Text('Báo cáo'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.redAccent,
+                              minimumSize: const Size(120, 36),
+                            ),
                           ),
                         ],
                       ),

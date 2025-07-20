@@ -96,7 +96,7 @@ class WorkAcceptanceService {
         } else if (error.contains("BẠN KHÔNG CÓ QUYỀN")) {
           throw Exception("Bạn không có quyền cập nhật trạng thái công việc này.");
         } else {
-          throw Exception("Đã xảy ra lỗi không xác định từ máy chủ.");
+          throw Exception("Chính chủ mới được cập nhật");
         }
       }
     } on FormatException catch (e) {

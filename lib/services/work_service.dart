@@ -140,7 +140,7 @@ class WorkService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw Exception('Cập nhật công việc thất bại: ${response.statusCode}');
+      throw Exception('Bạn không có quyền cập nhật công việc này: ${response.statusCode}');
     }
   }
 
@@ -155,7 +155,7 @@ class WorkService {
     print('[DEBUG] Delete work response: ${response.statusCode}');
 
     if (response.statusCode != 204) {
-      throw Exception('Xóa công việc thất bại: ${response.statusCode}');
+      throw Exception('Bạn không có quyền xóa công việc này: ${response.statusCode}');
     }
   }
 }
