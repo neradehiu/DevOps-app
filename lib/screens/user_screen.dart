@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/work_service.dart';
 import '../services/company_service.dart';
+import 'accepted_jobs_screen.dart';
+import 'list_work_accept_screen.dart';
 import 'ww_screen.dart';
 import 'settings_screen.dart';
 import 'companyListScreen.dart';
@@ -11,6 +13,8 @@ import 'profile_screen.dart';
 import 'group_chat_screen.dart';
 import 'private_chat_screen.dart';
 import 'admin_screen.dart';
+import '../services/work_acceptance_service.dart';
+
 
 
 class UserScreen extends StatefulWidget {
@@ -28,6 +32,10 @@ class _UserScreenState extends State<UserScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> jobList = [];
   List<Map<String, dynamic>> filteredJobs = [];
+  int? _accountId;
+  String selectedStatus = 'PENDING';
+  final List<String> statusOptions = ['PENDING', 'COMPLETED', 'CANCELLED'];
+
 
   @override
   void initState() {
@@ -36,6 +44,7 @@ class _UserScreenState extends State<UserScreen> {
     loadJobs();
     loadUserRole();
   }
+
 
   Future<void> loadUserRole() async {
     final role = await _authService.getRole();
@@ -55,10 +64,24 @@ class _UserScreenState extends State<UserScreen> {
   Future<void> loadJobs() async {
     try {
       final jobs = await WorkService.getAllWorks();
+      final accountId = await _authService.getAccountId();
       for (var job in jobs) {
-        final company = job['companyName']?.toLowerCase() ?? '';
+        final company = job['company'];
+        final workId = job['id'];
+        try {
+          final accepted = await WorkAcceptanceService.getAcceptedJobsByStatus(
+            workId,
+            accountId!,
+            selectedStatus,
+          );
+          job['hasAccepted'] = accepted.isNotEmpty;
+        } catch (e) {
+          job['hasAccepted'] = false; // fallback
+          debugPrint('Lỗi khi kiểm tra accepted job với workId $workId: $e');
+        }
       }
       setState(() {
+        _accountId = accountId;
         jobList = jobs;
         filteredJobs = List.from(jobs);
       });
@@ -152,6 +175,57 @@ class _UserScreenState extends State<UserScreen> {
       ),
     );
   }
+
+  void showAcceptedUsers(BuildContext context, int workId) async {
+    try {
+      final acceptedUsers = await WorkAcceptanceService.getAcceptancesByWork(workId);
+
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (_) => SizedBox(
+          height: 400,
+          child: Column(
+            children: [
+              const SizedBox(height: 16),
+              const Text(
+                'Người đã nhận việc',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              const Divider(),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: acceptedUsers.length,
+                  itemBuilder: (context, index) {
+                    final user = acceptedUsers[index];
+                    return ListTile(
+                      leading: const Icon(Icons.person),
+                      title: Text(user['accountUsername'] ?? 'Không rõ'),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Vị trí: ${user['position'] ?? ''}'),
+                          Text('Trạng thái: ${user['status'] ?? ''}'),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Không thể tải danh sách: $e')),
+      );
+    }
+  }
+
 
   Widget buildCircleButton({
     required Widget child,
@@ -263,6 +337,23 @@ class _UserScreenState extends State<UserScreen> {
               child: const Icon(Icons.message_rounded,
                   color: Colors.white, size: 24),
             ),
+            buildCircleButton(
+              onTap: () {
+                if (_accountId != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AcceptedJobsScreen(accountId: _accountId!),
+                    ),
+                  );
+                }
+              },
+              child: const Text(
+                'Me',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+            if (currentUserRole == 'ROLE_ADMIN' || currentUserRole == 'ROLE_MANAGER')
             buildCircleButton(
               onTap: () => onWWPressed(context),
               child: const Text(
@@ -377,6 +468,34 @@ class _UserScreenState extends State<UserScreen> {
           ),
         ),
         const SizedBox(height: 10),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Lọc theo trạng thái:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              DropdownButton<String>(
+                value: selectedStatus,
+                onChanged: (value) {
+                  setState(() {
+                    selectedStatus = value!;
+                  });
+                  loadJobs();
+                },
+                items: statusOptions.map((status) {
+                  return DropdownMenuItem(
+                    value: status,
+                    child: Text(status),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
         const Padding(
           padding: EdgeInsets.only(left: 16),
           child: Align(
@@ -442,21 +561,66 @@ class _UserScreenState extends State<UserScreen> {
                       if (currentUserRole != null &&
                           currentUserRole != 'ROLE_MANAGER' &&
                           currentUserRole != 'ROLE_ADMIN')
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton.icon(
-                            onPressed: () {
-                              final companyUsername = job['createdByUsername'];
-                              if (companyUsername != null) {
-                                onPrivateChat(companyUsername);
-                              }
-                            },
-                            icon: const Icon(Icons.chat_bubble, color: Colors.white),
-                            label: Text(
-                              'Chat với ${job['createdByUsername'] ?? "..."}',
-                              style: const TextStyle(color: Colors.white),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            if (job['hasAccepted'] == true)
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ListWorkAcceptScreen(workId: job['id']),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  foregroundColor: Colors.white,
+                                ),
+                                icon: const Icon(Icons.info_outline),
+                                label: const Text('Check thông tin'),
+                              )
+                            else
+                              ElevatedButton.icon(
+                                onPressed: () async {
+                                  final workId = job['id'];
+                                  if (workId != null && _accountId != null) {
+                                    final success = await WorkAcceptanceService.acceptWork(workId, _accountId!);
+                                    if (success) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Nhận việc thành công!')),
+                                      );
+                                      setState(() => job['hasAccepted'] = true); // cập nhật ngay
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Nhận việc thất bại!')),
+                                      );
+                                    }
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: Colors.purple,
+                                ),
+                                icon: const Icon(Icons.check_circle),
+                                label: const Text('Nhận việc'),
+                              ),
+                            const SizedBox(width: 8),
+                            TextButton.icon(
+                              onPressed: () {
+                                final companyUsername = job['createdByUsername'];
+                                if (companyUsername != null) {
+                                  onPrivateChat(companyUsername);
+                                }
+                              },
+                              icon: const Icon(Icons.chat_bubble, color: Colors.white),
+                              label: Text(
+                                'Chat với ${job['createdByUsername'] ?? "..."}',
+                                style: const TextStyle(color: Colors.white),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                     ],
                   ),

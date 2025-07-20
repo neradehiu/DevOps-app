@@ -121,6 +121,10 @@ class AuthService {
     }
   }
 
+  Future<int?> getAccountId() async {
+    final idStr = await storage.read(key: 'id');
+    return idStr != null ? int.tryParse(idStr) : null;
+  }
 
   Future<bool> logout() async {
     final token = await getToken();
@@ -139,7 +143,7 @@ class AuthService {
       if (response.statusCode == 200) {
         await storage.delete(key: 'token');
         await storage.delete(key: 'role');
-        await storage.delete(key: 'username'); // XÓA LUÔN USERNAME
+        await storage.delete(key: 'username');
         return true;
       } else {
         return false;
