@@ -1,20 +1,20 @@
-# --- Stage 1: Build Flutter Web App ---
+# Stage 1: Build Flutter Web
 FROM ghcr.io/cirruslabs/flutter:stable AS build
 
 WORKDIR /app
 
-# Cài đặt dependencies
+# Copy chỉ pubspec để cache dependencies
 COPY pubspec.* ./
 RUN flutter pub get
 
-# Copy mã nguồn và build ứng dụng
+# Copy toàn bộ source code
 COPY . .
-RUN flutter build web --release
 
-# --- Stage 2: Serve with Nginx ---
+# Build Flutter Web với verbose để debug nếu fail
+RUN flutter build web --release -v
+
+# Stage 2: Serve with Nginx
 FROM nginx:stable-alpine
-
 COPY --from=build /app/build/web /usr/share/nginx/html
-
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
