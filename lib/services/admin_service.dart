@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/account.dart';
 
 class AdminService {
-  static const baseUrl = 'http://localhost:8080/api/admin';
+  static const baseUrl = 'http://178.128.208.73:8080/api/admin';
 
   Future<List<Account>> getAllAccounts(String token) async {
     final response = await http.get(
@@ -67,7 +67,7 @@ class AdminService {
       int id,
       String name,
       String email,
-      String role,     // ← thêm role
+      String role,
       bool locked,
       String token,
       {String updatedBy = "admin"}
@@ -81,7 +81,7 @@ class AdminService {
       body: jsonEncode({
         'name': name,
         'email': email,
-        'role': role,          // ← thêm vào JSON
+        'role': role,
         'locked': locked,
         'updatedBy': updatedBy,
       }),

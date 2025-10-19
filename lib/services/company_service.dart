@@ -5,7 +5,7 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 
 class CompanyService {
 
-  static const String baseUrl = 'http://localhost:8080/api/companies';
+  static const String baseUrl = 'http://178.128.208.73:8080/api/companies';
   static const _storage = FlutterSecureStorage();
 
 
