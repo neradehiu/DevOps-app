@@ -1,5 +1,5 @@
 # --- Stage 1: Build Flutter Web App ---
-FROM subosito/flutter:3.24.3 AS build
+FROM cirrusci/flutter:3.24.3 AS build
 
 WORKDIR /app
 COPY . .
