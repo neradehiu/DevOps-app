@@ -8,7 +8,7 @@ class AuthService {
   static const baseUrl = 'http://178.128.208.73:8080/api/auth';
   final storage = const FlutterSecureStorage();
 
-
+  // ---------------------- REGISTER ----------------------
   Future<String?> register(RegisterRequest request) async {
     try {
       final response = await http.post(
@@ -16,18 +16,24 @@ class AuthService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(request.toJson()),
       );
-      if (response.statusCode == 200) {
+
+      print('📩 [REGISTER] Response: ${response.statusCode} - ${response.body}');
+
+      // ✅ Backend trả về 200 hoặc 201 => đăng ký thành công
+      if (response.statusCode == 200 || response.statusCode == 201) {
         return null;
-      } else {
-        final error = jsonDecode(response.body);
-        return error['message'] ?? response.body;
       }
+
+      // ❌ Lỗi khác thì parse message
+      final error = jsonDecode(response.body);
+      return error['message'] ?? response.body;
     } catch (e) {
+      print('❌ [REGISTER ERROR] $e');
       return 'Đã xảy ra lỗi khi đăng ký: $e';
     }
   }
 
-
+  // ---------------------- LOGIN ----------------------
   Future<String?> login(LoginRequest request, Function(String role) onSuccess) async {
     try {
       final response = await http.post(
@@ -36,30 +42,42 @@ class AuthService {
         body: jsonEncode(request.toJson()),
       );
 
+      print('📩 [LOGIN] Response: ${response.statusCode} - ${response.body}');
+
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
-        final token = json['token'];
-        final role = json['role'];
-        final username = json['username'];
-        final id = json['id'];
 
-        // ✅ Lưu đầy đủ vào storage
+        final token = json['token']?.toString();
+        final role = json['role']?.toString();
+        final username = json['username']?.toString();
+        final id = json['id']?.toString();
+
+        if (token == null || role == null) {
+          print('⚠️ [LOGIN] Thiếu token hoặc role trong phản hồi!');
+          return 'Phản hồi từ máy chủ không hợp lệ (thiếu token hoặc role)';
+        }
+
+        // ✅ Lưu token và thông tin người dùng
         await storage.write(key: 'token', value: token);
         await storage.write(key: 'role', value: role);
-        await storage.write(key: 'username', value: username);
-        await storage.write(key: 'id', value: id.toString());
+        if (username != null) await storage.write(key: 'username', value: username);
+        if (id != null) await storage.write(key: 'id', value: id);
+
+        print('✅ [LOGIN SUCCESS] Token: $token, Role: $role, User: $username, ID: $id');
 
         onSuccess(role);
         return null;
-      } else {
-        final json = jsonDecode(response.body);
-        return json['message'] ?? 'Đăng nhập thất bại';
       }
+
+      final json = jsonDecode(response.body);
+      return json['message'] ?? 'Đăng nhập thất bại (${response.statusCode})';
     } catch (e) {
+      print('❌ [LOGIN ERROR] $e');
       return 'Lỗi đăng nhập: $e';
     }
   }
 
+  // ---------------------- FORGOT PASSWORD ----------------------
   Future<String?> forgotPassword(String email) async {
     try {
       final response = await http.post(
@@ -68,36 +86,35 @@ class AuthService {
         body: jsonEncode({'email': email}),
       );
 
-      if (response.statusCode == 200) {
-        return null;
-      } else {
-        final error = jsonDecode(response.body);
-        return error['message'] ?? 'Không thể gửi email khôi phục';
-      }
+      print('📩 [FORGOT PASSWORD] ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode == 200) return null;
+
+      final error = jsonDecode(response.body);
+      return error['message'] ?? 'Không thể gửi email khôi phục';
     } catch (e) {
       return 'Lỗi gửi email: $e';
     }
   }
 
-
+  // ---------------------- VERIFY CODE ----------------------
   Future<bool> verifyCode(String email, String code) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/verify-code'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'code': code,
-        }),
+        body: jsonEncode({'email': email, 'code': code}),
       );
 
+      print('📩 [VERIFY CODE] ${response.statusCode} - ${response.body}');
       return response.statusCode == 200;
     } catch (e) {
+      print('❌ [VERIFY CODE ERROR] $e');
       return false;
     }
   }
 
-
+  // ---------------------- RESET PASSWORD ----------------------
   Future<String?> resetPassword(String email, String code, String newPassword) async {
     try {
       final response = await http.post(
@@ -110,67 +127,50 @@ class AuthService {
         }),
       );
 
-      if (response.statusCode == 200) {
-        return null;
-      } else {
-        final error = jsonDecode(response.body);
-        return error['message'] ?? 'Không thể đặt lại mật khẩu';
-      }
+      print('📩 [RESET PASSWORD] ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode == 200) return null;
+
+      final error = jsonDecode(response.body);
+      return error['message'] ?? 'Không thể đặt lại mật khẩu';
     } catch (e) {
       return 'Lỗi đặt lại mật khẩu: $e';
     }
   }
 
+  // ---------------------- LOGOUT ----------------------
+  Future<bool> logout() async {
+    final token = await getToken();
+    if (token == null) return false;
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/logout'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      print('📩 [LOGOUT] ${response.statusCode} - ${response.body}');
+
+      // Dù backend có lỗi thì vẫn xóa token local
+      await storage.deleteAll();
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('❌ [LOGOUT ERROR] $e');
+      await storage.deleteAll();
+      return false;
+    }
+  }
+
+  // ---------------------- GETTERS ----------------------
   Future<int?> getAccountId() async {
     final idStr = await storage.read(key: 'id');
     return idStr != null ? int.tryParse(idStr) : null;
   }
 
-  Future<bool> logout() async {
-    final token = await getToken();
+  Future<String?> getToken() async => await storage.read(key: 'token');
+  Future<String?> getRole() async => await storage.read(key: 'role');
+  Future<String?> getUsername() async => await storage.read(key: 'username');
 
-    if (token == null) return false;
-
-    final url = Uri.parse('$baseUrl/logout');
-    try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        await storage.delete(key: 'token');
-        await storage.delete(key: 'role');
-        await storage.delete(key: 'username');
-        return true;
-      } else {
-        return false;
-      }
-    } catch (e) {
-      return false;
-    }
-  }
-
-
-  Future<String?> getToken() async {
-    return await storage.read(key: 'token');
-  }
-
-
-  Future<String?> getRole() async {
-    return await storage.read(key: 'role');
-  }
-
-
-  Future<String?> getUsername() async {
-    return await storage.read(key: 'username');
-  }
-
-
-  Future<bool> isLoggedIn() async {
-    final token = await getToken();
-    return token != null;
-  }
+  Future<bool> isLoggedIn() async => (await getToken()) != null;
 }

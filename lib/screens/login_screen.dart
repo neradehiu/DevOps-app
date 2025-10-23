@@ -41,6 +41,15 @@ class _LoginScreenState extends State<LoginScreen> {
     final request = LoginRequest(username: username, password: password);
 
     final error = await _authService.login(request, (role) {
+      // ✅ Kiểm tra null trước khi xử lý
+      if (role == null) {
+        setState(() {
+          _errorMessage = "Không xác định được vai trò người dùng.";
+        });
+        return;
+      }
+
+      // ✅ Điều hướng theo vai trò
       if (role == "ROLE_ADMIN") {
         Get.offAll(() => const AdminScreen());
       } else {
@@ -145,8 +154,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           return const Color(0xFF9D4EDD);
                         },
                       ),
-                      foregroundColor: MaterialStateProperty.all<Color>(
-                          Colors.white),
+                      foregroundColor:
+                      MaterialStateProperty.all<Color>(Colors.white),
                       textStyle: MaterialStateProperty.all<TextStyle>(
                         const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold),

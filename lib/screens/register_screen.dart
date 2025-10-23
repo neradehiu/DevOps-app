@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../models/register_request.dart';
 import '../services/auth_service.dart';
 import '../widgets/custom_input_decoration.dart';
+import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -19,6 +21,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final AuthService _authService = AuthService();
 
   String? _errorMessage;
+  bool _isLoading = false;
 
   void _register() async {
     final username = _usernameController.text.trim();
@@ -46,7 +49,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     setState(() {
-      _errorMessage = null; // Clear error if any
+      _isLoading = true;
+      _errorMessage = null;
     });
 
     final request = RegisterRequest(
@@ -59,11 +63,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     final result = await _authService.register(request);
 
+    setState(() {
+      _isLoading = false;
+    });
+
     if (result == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Đăng ký thành công!")),
+      // ✅ Đăng ký thành công -> hiển thị thông báo và quay lại login
+      Get.snackbar(
+        "Thành công",
+        "Đăng ký thành công! Vui lòng đăng nhập.",
+        backgroundColor: Colors.green.shade400,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+        duration: const Duration(seconds: 2),
       );
-      Navigator.pop(context); // Quay lại login
+
+      await Future.delayed(const Duration(seconds: 2));
+      Get.offAll(() => const LoginScreen());
     } else {
       setState(() {
         _errorMessage = "Lỗi: $result";
@@ -136,7 +152,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       style: const TextStyle(color: Colors.red),
                     ),
                   const SizedBox(height: 10),
-                  SizedBox(
+                  _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : SizedBox(
                     width: double.infinity,
                     height: 48,
                     child: ElevatedButton(
@@ -144,16 +162,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         backgroundColor: MaterialStateProperty.resolveWith<Color>(
                               (Set<MaterialState> states) {
                             if (states.contains(MaterialState.hovered)) {
-                              return const Color(0xFF7B82E0); // Hover
+                              return const Color(0xFF7B82E0);
                             }
-                            return const Color(0xFF9D4EDD); // Default
+                            return const Color(0xFF9D4EDD);
                           },
                         ),
-                        foregroundColor: MaterialStateProperty.all<Color>(Colors.white),
+                        foregroundColor:
+                        MaterialStateProperty.all<Color>(Colors.white),
                         textStyle: MaterialStateProperty.all<TextStyle>(
-                          const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
                         ),
-                        shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                        shape: MaterialStateProperty.all<
+                            RoundedRectangleBorder>(
                           RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
@@ -166,7 +187,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const SizedBox(height: 10),
                   TextButton(
                     onPressed: () {
-                      Navigator.pop(context);
+                      Get.offAll(() => const LoginScreen());
                     },
                     child: const Text(
                       "Đã có tài khoản? Đăng nhập",
