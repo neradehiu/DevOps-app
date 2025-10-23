@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/account.dart';
 
 class AdminService {
-  static const baseUrl = 'http://178.128.208.73:8080/api/admin';
+  static const baseUrl = 'http://backend-fwfe:8080/api/admin';
 
   Future<List<Account>> getAllAccounts(String token) async {
     final response = await http.get(

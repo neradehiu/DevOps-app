@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ReportService {
-  static const String _baseUrl = 'http://178.128.208.73:8080/api/reports';
+  static const String _baseUrl = 'http://backend-fwfe:8080/api/reports';
   static final storage = FlutterSecureStorage();
 
   // Gửi báo cáo người dùng
