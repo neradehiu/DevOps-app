@@ -2,19 +2,21 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:jwt_decoder/jwt_decoder.dart';
-import 'company_service.dart';
 
 class WorkService {
-  static const String baseUrl = 'http://backend-fwfe:8080/api/works-posted';
-  static const _storage = FlutterSecureStorage();
+  static final _storage = FlutterSecureStorage();
 
+  // 🔧 BASE_URL động theo môi trường
+  static const String baseHost = String.fromEnvironment(
+    'BASE_URL',
+    defaultValue: 'http://localhost:8080',
+  );
+  static String get baseUrl => '$baseHost/api/works-posted';
+
+  // Lấy headers chứa token & role
   static Future<Map<String, String>> _getAuthHeaders() async {
     final token = await _storage.read(key: 'token');
-
-    if (token == null) {
-      print('[DEBUG] Không tìm thấy token trong FlutterSecureStorage');
-      throw Exception('Không tìm thấy token.');
-    }
+    if (token == null) throw Exception('Token không tồn tại. Vui lòng đăng nhập.');
 
     final decodedToken = JwtDecoder.decode(token);
     final username = decodedToken['sub'];
@@ -32,16 +34,16 @@ class WorkService {
     };
   }
 
+  /// Tạo công việc mới
   static Future<Map<String, dynamic>> createWork({
     required String position,
     required String descriptionWork,
     required int maxAccepted,
     required int maxReceiver,
     required double salary,
-    required int companyId, // <-- truyền từ UI
+    required int companyId,
   }) async {
     final headers = await _getAuthHeaders();
-
     final response = await http.post(
       Uri.parse(baseUrl),
       headers: headers,
@@ -51,7 +53,7 @@ class WorkService {
         'maxAccepted': maxAccepted,
         'maxReceiver': maxReceiver,
         'salary': salary,
-        'companyId': companyId, // <-- dùng đúng id
+        'companyId': companyId,
       }),
     );
 
@@ -65,26 +67,7 @@ class WorkService {
     }
   }
 
-//
-  // static Future<List<Map<String, dynamic>>> getAllWorks() async {
-  //   final headers = await _getAuthHeaders();
-  //
-  //   final response = await http.get(
-  //     Uri.parse(baseUrl),
-  //     headers: headers,
-  //   );
-  //
-  //   print('[DEBUG] Get works response: ${response.statusCode}');
-  //   print('[DEBUG] Response body: ${response.body}');
-  //
-  //   if (response.statusCode == 200) {
-  //     final List<dynamic> data = jsonDecode(response.body);
-  //     return data.cast<Map<String, dynamic>>();
-  //   } else {
-  //     throw Exception('Không thể tải danh sách công việc: ${response.statusCode}');
-  //   }
-  // }
-
+  /// Lấy danh sách tất cả công việc
   static Future<List<Map<String, dynamic>>> getAllWorks() async {
     final headers = await _getAuthHeaders();
     final response = await http.get(Uri.parse(baseUrl), headers: headers);
@@ -110,6 +93,7 @@ class WorkService {
     }
   }
 
+  /// Cập nhật công việc
   static Future<Map<String, dynamic>> updateWork({
     required int id,
     required String position,
@@ -117,10 +101,9 @@ class WorkService {
     required int maxAccepted,
     required int maxReceiver,
     required double salary,
-    required int companyId, // <-- truyền từ UI
+    required int companyId,
   }) async {
     final headers = await _getAuthHeaders();
-
     final response = await http.put(
       Uri.parse('$baseUrl/$id'),
       headers: headers,
@@ -130,7 +113,7 @@ class WorkService {
         'maxAccepted': maxAccepted,
         'maxReceiver': maxReceiver,
         'salary': salary,
-        'companyId': companyId, // <-- truyền đúng công ty
+        'companyId': companyId,
       }),
     );
 
@@ -144,13 +127,10 @@ class WorkService {
     }
   }
 
+  /// Xóa công việc
   static Future<void> deleteWork(int id) async {
     final headers = await _getAuthHeaders();
-
-    final response = await http.delete(
-      Uri.parse('$baseUrl/$id'),
-      headers: headers,
-    );
+    final response = await http.delete(Uri.parse('$baseUrl/$id'), headers: headers);
 
     print('[DEBUG] Delete work response: ${response.statusCode}');
 

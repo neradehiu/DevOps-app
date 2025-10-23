@@ -16,6 +16,14 @@ class GroupChatService {
 
   List<Map<String, dynamic>> get messages => _messages;
 
+  // 🔧 BASE_URL động theo môi trường
+  static const String baseHost = String.fromEnvironment(
+    'BASE_URL',
+    defaultValue: 'http://localhost:8080',
+  );
+  String get wsUrl => '$baseHost/ws';
+  String get apiUrl => '$baseHost/api/chat';
+
   Future<void> connect({
     required Function(Map<String, dynamic>) onMessageReceived,
     Function()? onConnect,
@@ -33,12 +41,11 @@ class GroupChatService {
 
     _stompClient = StompClient(
       config: StompConfig.SockJS(
-        url: 'http://backend-fwfe:8080/ws',
+        url: wsUrl,
         stompConnectHeaders: {'Authorization': 'Bearer $_token'},
         webSocketConnectHeaders: {'Authorization': 'Bearer $_token'},
         onConnect: (StompFrame frame) {
           _isConnected = true;
-
           print('✅ WS Connected');
 
           _stompClient?.subscribe(
@@ -76,8 +83,7 @@ class GroupChatService {
     } else {
       _messages.add(data);
     }
-
-    callback(data); // Cập nhật UI
+    callback(data);
   }
 
   void sendGroupMessage(String content) {
@@ -86,11 +92,7 @@ class GroupChatService {
       return;
     }
 
-    final message = {
-      'content': content,
-      'type': 'GROUP',
-    };
-
+    final message = {'content': content, 'type': 'GROUP'};
     print('📤 Gửi message: ${jsonEncode(message)}');
 
     _stompClient?.send(
@@ -106,7 +108,6 @@ class GroupChatService {
     }
 
     print('📤 markAsReadWebSocket gửi ID: $messageId');
-
     _stompClient?.send(
       destination: '/app/chat.markRead',
       body: messageId.toString(),
@@ -115,7 +116,7 @@ class GroupChatService {
   }
 
   Future<void> markAsReadRest(int messageId) async {
-    final url = Uri.parse('http://backend-fwfe:8080/api/chat/mark-read/$messageId');
+    final url = Uri.parse('$apiUrl/mark-read/$messageId');
     final response = await http.put(
       url,
       headers: {

@@ -16,6 +16,15 @@ class PrivateChatService {
 
   List<Map<String, dynamic>> get messages => _messages;
 
+  // 🔧 BASE_URL động theo môi trường
+  static const String baseHost = String.fromEnvironment(
+    'BASE_URL',
+    defaultValue: 'http://localhost:8080',
+  );
+
+  String get restBaseUrl => '$baseHost/api/chat';
+  String get wsUrl => '$baseHost/ws';
+
   Future<void> connect({
     required Function(Map<String, dynamic>) onMessageReceived,
     Function()? onConnect,
@@ -29,39 +38,33 @@ class PrivateChatService {
       return;
     }
 
-    print('🔐 Kết nối WS (PRIVATE) với token: $_token, username: $_username');
+    print('🔐 Kết nối WS Private với token: $_token, username: $_username');
 
     _stompClient = StompClient(
       config: StompConfig.SockJS(
-        url: 'http://backend-fwfe:8080/ws',
+        url: wsUrl,
         stompConnectHeaders: {'Authorization': 'Bearer $_token'},
         webSocketConnectHeaders: {'Authorization': 'Bearer $_token'},
-        onConnect: (StompFrame frame) {
+        onConnect: (frame) {
           _isConnected = true;
           print('✅ WS Private Connected');
 
           _stompClient?.subscribe(
-              destination: '/user/${_username}/queue/messages',
-          callback: (StompFrame frame) {
+            destination: '/user/${_username}/queue/messages',
+            callback: (StompFrame frame) {
               if (frame.body != null) {
                 final data = jsonDecode(frame.body!);
-                print('📥 Private WS nhận được: ${jsonEncode(data)}');
-
                 final type = data['type']?.toString().toUpperCase().trim();
                 final sender = data['sender']?.toString().trim();
                 final receiver = data['receiver']?.toString().trim();
                 final localUser = _username?.trim();
 
-                print('🔎 Loại tin: $type');
-                print('👤 Người gửi: $sender');
-                print('👤 Người nhận: $receiver');
-                print('👤 Người dùng hiện tại: $localUser');
-
                 final isRelated = sender == localUser || receiver == localUser;
 
                 if (type == 'PRIVATE' && isRelated) {
                   data['isSender'] = sender == localUser;
-                  data['readByUsers'] = List<String>.from(data['readByUsers'] ?? []);
+                  data['readByUsers'] =
+                  List<String>.from(data['readByUsers'] ?? []);
                   updateMessage(data, onMessageReceived);
                 } else {
                   print('⚠️ Tin nhắn không liên quan hoặc không phải PRIVATE');
@@ -69,12 +72,12 @@ class PrivateChatService {
               }
             },
           );
-          print('🌀 Subscribed to /user/{_username}/queue/messages with id=private-sub');
 
+          print('🌀 Subscribed to /user/{_username}/queue/messages');
           onConnect?.call();
         },
         beforeConnect: () async {
-          print('⏳ Đang kết nối đến WS private...');
+          print('⏳ Đang kết nối WS private...');
           await Future.delayed(const Duration(milliseconds: 300));
         },
         onWebSocketError:
@@ -98,7 +101,6 @@ class PrivateChatService {
     }
     cb(data);
   }
-
 
   void sendPrivateMessage(String content, String receiverUsername) {
     if (!_isConnected || _stompClient == null) {
@@ -137,14 +139,9 @@ class PrivateChatService {
 
   Future<void> markAsReadRest(int messageId) async {
     final String? token = await _storage.read(key: 'token');
+    if (token == null) return;
 
-    if (token == null) {
-      print("❌ Token is null. Chưa đăng nhập hoặc token hết hạn.");
-      return;
-    }
-
-    final url =
-    Uri.parse('http://backend-fwfe:8080/api/chat/mark-read/$messageId');
+    final url = Uri.parse('$restBaseUrl/mark-read/$messageId');
     final response = await http.put(
       url,
       headers: {
@@ -163,14 +160,10 @@ class PrivateChatService {
   Future<List<Map<String, dynamic>>> fetchPrivateMessageHistory(
       String receiverUsername) async {
     final String? token = await _storage.read(key: 'token');
-
-    if (token == null) {
-      print("❌ Token is null. Chưa đăng nhập hoặc token hết hạn.");
-      return [];
-    }
+    if (token == null) return [];
 
     final url = Uri.parse(
-        'http://backend-fwfe:8080/api/chat/chat/history/private?user=$receiverUsername&limit=50');
+        '$restBaseUrl/chat/history/private?user=$receiverUsername&limit=50');
     final response = await http.get(
       url,
       headers: {
@@ -190,27 +183,15 @@ class PrivateChatService {
 
   Future<List<String>> getPrivateSenders(String myUsername) async {
     final String? token = await _storage.read(key: 'token');
+    if (token == null) return [];
 
-    if (token == null) {
-      print("❌ Token is null. Chưa đăng nhập hoặc token hết hạn.");
-      return [];
-    }
+    final encodedUsername = Uri.encodeComponent(myUsername);
+    final uri = Uri.parse('$restBaseUrl/chat/private/inbox?myUsername=$encodedUsername');
 
-    print("📦 Username gửi đi tại getPrivateSenders: $myUsername");
-    print("📦 Token gửi đi tại getPrivateSenders: $token");
-
-    final String encodedUsername = Uri.encodeComponent(myUsername);
-
-    final uri = Uri.parse(
-        'http://backend-fwfe:8080/api/chat/chat/private/inbox?myUsername=$encodedUsername');
-
-    final response = await http.get(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
+    final response = await http.get(uri, headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    });
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);

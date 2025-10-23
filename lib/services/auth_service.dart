@@ -5,7 +5,22 @@ import '../models/login_request.dart';
 import '../models/register_request.dart';
 
 class AuthService {
-  static const baseUrl = 'http://backend-fwfe:8080/api/auth';
+  // ---------------------- BASE URL CONFIG ----------------------
+  static const String _defaultBaseUrl = 'http://localhost:8080/api/auth';
+  static const String _dockerBaseUrl = '/api/auth';
+  static const String _prodBaseUrl = 'http://178.128.208.73:8080/api/auth';
+
+  // 🧠 Các biến môi trường build-time
+  static const bool isDocker = bool.fromEnvironment('DOCKER_ENV', defaultValue: false);
+  static const bool isProd = bool.fromEnvironment('PROD_ENV', defaultValue: false);
+
+  // 🧩 Chọn base URL phù hợp theo môi trường
+  static String get baseUrl {
+    if (isProd) return _prodBaseUrl;
+    if (isDocker) return _dockerBaseUrl;
+    return _defaultBaseUrl;
+  }
+
   final storage = const FlutterSecureStorage();
 
   // ---------------------- REGISTER ----------------------
@@ -19,12 +34,10 @@ class AuthService {
 
       print('📩 [REGISTER] Response: ${response.statusCode} - ${response.body}');
 
-      // ✅ Backend trả về 200 hoặc 201 => đăng ký thành công
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return null;
+        return null; // ✅ Thành công
       }
 
-      // ❌ Lỗi khác thì parse message
       final error = jsonDecode(response.body);
       return error['message'] ?? response.body;
     } catch (e) {
@@ -57,14 +70,13 @@ class AuthService {
           return 'Phản hồi từ máy chủ không hợp lệ (thiếu token hoặc role)';
         }
 
-        // ✅ Lưu token và thông tin người dùng
+        // ✅ Lưu thông tin người dùng
         await storage.write(key: 'token', value: token);
         await storage.write(key: 'role', value: role);
         if (username != null) await storage.write(key: 'username', value: username);
         if (id != null) await storage.write(key: 'id', value: id);
 
         print('✅ [LOGIN SUCCESS] Token: $token, Role: $role, User: $username, ID: $id');
-
         onSuccess(role);
         return null;
       }
@@ -93,6 +105,7 @@ class AuthService {
       final error = jsonDecode(response.body);
       return error['message'] ?? 'Không thể gửi email khôi phục';
     } catch (e) {
+      print('❌ [FORGOT PASSWORD ERROR] $e');
       return 'Lỗi gửi email: $e';
     }
   }
@@ -134,6 +147,7 @@ class AuthService {
       final error = jsonDecode(response.body);
       return error['message'] ?? 'Không thể đặt lại mật khẩu';
     } catch (e) {
+      print('❌ [RESET PASSWORD ERROR] $e');
       return 'Lỗi đặt lại mật khẩu: $e';
     }
   }
@@ -153,7 +167,6 @@ class AuthService {
 
       // Dù backend có lỗi thì vẫn xóa token local
       await storage.deleteAll();
-
       return response.statusCode == 200;
     } catch (e) {
       print('❌ [LOGOUT ERROR] $e');
@@ -162,7 +175,7 @@ class AuthService {
     }
   }
 
-  // ---------------------- GETTERS ----------------------
+  // ---------------------- STORAGE GETTERS ----------------------
   Future<int?> getAccountId() async {
     final idStr = await storage.read(key: 'id');
     return idStr != null ? int.tryParse(idStr) : null;
@@ -171,6 +184,5 @@ class AuthService {
   Future<String?> getToken() async => await storage.read(key: 'token');
   Future<String?> getRole() async => await storage.read(key: 'role');
   Future<String?> getUsername() async => await storage.read(key: 'username');
-
   Future<bool> isLoggedIn() async => (await getToken()) != null;
 }

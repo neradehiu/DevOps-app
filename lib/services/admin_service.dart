@@ -3,63 +3,82 @@ import 'package:http/http.dart' as http;
 import '../models/account.dart';
 
 class AdminService {
-  static const baseUrl = 'http://backend-fwfe:8080/api/admin';
+  // 🔧 BASE_URL linh hoạt: local, Docker, VPS
+  static const String baseHost = String.fromEnvironment(
+    'BASE_URL',
+    defaultValue: 'http://localhost:8080',
+  );
+
+  static const String baseUrl = '$baseHost/api/admin';
+
+  // 🧩 Helper để log gọn gàng
+  void _logResponse(String action, http.Response response) {
+    print('[$action] -> ${response.statusCode} | ${response.body}');
+  }
 
   Future<List<Account>> getAllAccounts(String token) async {
     final response = await http.get(
       Uri.parse(baseUrl),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
+      headers: {'Authorization': 'Bearer $token'},
     );
 
+    _logResponse('GET all accounts', response);
+
     if (response.statusCode == 200) {
-      List jsonList = jsonDecode(response.body);
-      return jsonList.map((json) => Account.fromJson(json)).toList();
+      final List jsonList = jsonDecode(response.body);
+      return jsonList.map((e) => Account.fromJson(e)).toList();
     } else {
-      throw Exception('Failed to load accounts');
+      throw Exception('❌ Failed to load accounts: ${response.body}');
+    }
+  }
+
+  Future<Account> getAccountById(int id, String token) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/$id'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    _logResponse('GET account by ID', response);
+
+    if (response.statusCode == 200 &&
+        response.body.isNotEmpty &&
+        response.body != 'null') {
+      return Account.fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception('❌ Failed to load account: ${response.body}');
     }
   }
 
   Future<void> lockUser(int id, String token) async {
     final response = await http.put(
       Uri.parse('$baseUrl/lock/$id'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
+      headers: {'Authorization': 'Bearer $token'},
     );
-    print('Lock response: ${response.statusCode} ${response.body}');
+    _logResponse('LOCK user', response);
     if (response.statusCode != 200) {
-      throw Exception('Failed to lock user');
+      throw Exception('❌ Failed to lock user');
     }
   }
 
   Future<void> unlockUser(int id, String token) async {
     final response = await http.put(
       Uri.parse('$baseUrl/unlock/$id'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
+      headers: {'Authorization': 'Bearer $token'},
     );
-    print('Unlock response: ${response.statusCode} ${response.body}');
+    _logResponse('UNLOCK user', response);
     if (response.statusCode != 200) {
-      throw Exception('Failed to unlock user');
+      throw Exception('❌ Failed to unlock user');
     }
   }
 
   Future<void> deleteUser(int id, String token) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/$id'),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
+      headers: {'Authorization': 'Bearer $token'},
     );
-
-    print('Delete response: ${response.statusCode} - ${response.body}');
+    _logResponse('DELETE user', response);
     if (response.statusCode != 200 && response.statusCode != 204) {
-      throw Exception('Failed to delete user');
+      throw Exception('❌ Failed to delete user');
     }
   }
 
@@ -69,9 +88,9 @@ class AdminService {
       String email,
       String role,
       bool locked,
-      String token,
-      {String updatedBy = "admin"}
-      ) async {
+      String token, {
+        String updatedBy = "admin",
+      }) async {
     final response = await http.put(
       Uri.parse('$baseUrl/update/$id'),
       headers: {
@@ -87,37 +106,17 @@ class AdminService {
       }),
     );
 
-    print('Update user response: ${response.statusCode} - ${response.body}');
+    _logResponse('UPDATE user', response);
+
     if (response.statusCode != 200) {
-      throw Exception('Failed to update user');
-    }
-  }
-
-
-
-  Future<Account> getAccountById(int id, String token) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/$id'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    print('Status: ${response.statusCode}');
-    print('Body: ${response.body}');
-
-    if (response.statusCode == 200 && response.body.isNotEmpty &&
-        response.body != 'null') {
-      return Account.fromJson(jsonDecode(response.body));
-    } else {
-      throw Exception('Failed to load account info: ${response.body}');
+      throw Exception('❌ Failed to update user');
     }
   }
 
   Future<void> changePassword(String oldPass, String newPass, String token) async {
+    // ✅ Sửa đường dẫn đúng: chỉ /change-password, không lặp /api/admin
     final response = await http.post(
-      Uri.parse('$baseUrl/api/admin/change-password'),
+      Uri.parse('$baseUrl/change-password'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -128,12 +127,12 @@ class AdminService {
       }),
     );
 
+    _logResponse('CHANGE password', response);
+
     if (response.statusCode != 200) {
-      throw Exception('Đổi mật khẩu thất bại');
+      throw Exception('❌ Đổi mật khẩu thất bại');
     }
   }
-
-
 
   Future<void> createUser({
     required String name,
@@ -167,12 +166,10 @@ class AdminService {
       body: jsonEncode(body),
     );
 
-    print('Create user response: ${response.statusCode} - ${response.body}');
+    _logResponse('CREATE user', response);
 
     if (response.statusCode != 200) {
-      throw Exception('Tạo tài khoản thất bại: ${response.body}');
+      throw Exception('❌ Tạo tài khoản thất bại: ${response.body}');
     }
   }
 }
-
-

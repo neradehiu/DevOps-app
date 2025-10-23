@@ -4,22 +4,25 @@ import 'package:http/http.dart' as http;
 import 'package:jwt_decoder/jwt_decoder.dart';
 
 class CompanyService {
-
-  static const String baseUrl = 'http://backend-fwfe:8080/api/companies';
   static const _storage = FlutterSecureStorage();
 
+  // 🔧 BASE_URL động theo môi trường
+  static const String baseHost = String.fromEnvironment(
+    'BASE_URL',
+    defaultValue: 'http://localhost:8080',
+  );
+  static String get baseUrl => '$baseHost/api/companies';
 
   static Future<Map<String, String>> _getAuthHeaders() async {
     final token = await _storage.read(key: 'token');
-
     if (token == null) {
       print('[DEBUG] Không tìm thấy token trong FlutterSecureStorage');
       throw Exception('Không tìm thấy token.');
     }
 
     final decodedToken = JwtDecoder.decode(token);
-    final username = decodedToken['sub'];
-    final role = decodedToken['role'];
+    final username = decodedToken['sub'] ?? '';
+    final role = decodedToken['role'] ?? '';
 
     print('[DEBUG] Token: $token');
     print('[DEBUG] Username: $username');
@@ -32,7 +35,6 @@ class CompanyService {
       'X-Role': role,
     };
   }
-
 
   static Future<Map<String, dynamic>> createCompany({
     required String name,
@@ -63,7 +65,6 @@ class CompanyService {
     }
   }
 
-
   static Future<List<Map<String, dynamic>>> getMyCompanies() async {
     final headers = await _getAuthHeaders();
 
@@ -82,7 +83,6 @@ class CompanyService {
       throw Exception('Không thể tải công ty của bạn: ${response.statusCode}');
     }
   }
-
 
   static Future<List<Map<String, dynamic>>> getAllCompanies() async {
     final headers = await _getAuthHeaders();
@@ -103,7 +103,6 @@ class CompanyService {
     }
   }
 
-
   static Future<Map<String, dynamic>> getCompanyById(int id) async {
     final headers = await _getAuthHeaders();
 
@@ -121,7 +120,6 @@ class CompanyService {
       throw Exception('Không thể tải chi tiết công ty: ${response.statusCode}');
     }
   }
-
 
   static Future<Map<String, dynamic>> updateCompany({
     required int id,
@@ -152,7 +150,6 @@ class CompanyService {
       throw Exception('Cập nhật công ty thất bại: ${response.statusCode}');
     }
   }
-
 
   static Future<void> deleteCompany(int id) async {
     final headers = await _getAuthHeaders();
