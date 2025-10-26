@@ -6,9 +6,9 @@ import '../models/register_request.dart';
 
 class AuthService {
   // ---------------------- BASE URL CONFIG ----------------------
-  static const String _defaultBaseUrl = 'http://localhost:8080/api/auth';
+  static const String _defaultBaseUrl = 'http://159.65.0.228:8080/api/auth';
   static const String _dockerBaseUrl = '/api/auth';
-  static const String _prodBaseUrl = 'http://178.128.208.73:8080/api/auth';
+  static const String _prodBaseUrl = 'http://159.65.0.228:8080/api/auth';
 
   // 🧠 Các biến môi trường build-time
   static const bool isDocker = bool.fromEnvironment('DOCKER_ENV', defaultValue: false);

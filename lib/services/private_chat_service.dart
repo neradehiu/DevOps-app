@@ -19,7 +19,7 @@ class PrivateChatService {
   // 🔧 BASE_URL động theo môi trường
   static const String baseHost = String.fromEnvironment(
     'BASE_URL',
-    defaultValue: 'http://localhost:8080',
+    defaultValue: 'http://159.65.0.228:8080',
   );
 
   String get restBaseUrl => '$baseHost/api/chat';

@@ -6,7 +6,7 @@ class AdminService {
   // 🔧 BASE_URL linh hoạt: local, Docker, VPS
   static const String baseHost = String.fromEnvironment(
     'BASE_URL',
-    defaultValue: 'http://localhost:8080',
+    defaultValue: 'http://159.65.0.228:8080',
   );
 
   static const String baseUrl = '$baseHost/api/admin';
